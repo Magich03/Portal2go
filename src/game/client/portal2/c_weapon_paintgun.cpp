@@ -462,7 +462,7 @@ void C_WeaponPaintGun::SetPaintPower( PaintPowerType type )
 }
 
 
-static PaintPowerType paintPowersInGunOrder[PAINT_POWER_TYPE_COUNT] = { BOUNCE_POWER, REFLECT_POWER, SPEED_POWER, PORTAL_POWER };
+static PaintPowerType paintPowersInGunOrder[PAINT_POWER_TYPE_COUNT] = { BOUNCE_POWER, REFLECT_POWER, SPEED_POWER, STICK_POWER, PORTAL_POWER };
 
 void C_WeaponPaintGun::CyclePaintPower( bool bForward )
 {
@@ -528,7 +528,6 @@ static void NextPaint()
 		pPaintGun->CyclePaintPower( true );
 	}
 }
-// FIXME: Bring this back for DLC2
 static ConCommand nextpaint( "nextpaint", NextPaint );
 
 
@@ -544,15 +543,14 @@ static void PrevPaint()
 		pPaintGun->CyclePaintPower( false );
 	}
 }
-// FIXME: Bring this back for DLC2
-//static ConCommand prevpaint( "prevpaint", PrevPaint );
+static ConCommand prevpaint( "prevpaint", PrevPaint );
 
 
 static void ChangePaintTo( const CCommand& args )
 {
 	if ( args.ArgC() != 2 )
 	{
-		DevMsg("changepaintto bounce,speed,portal");// FIXME: Bring back for DLC2 ,reflect");
+		DevMsg("changepaintto bounce,speed,portal,reflect,sticky");
 		return;
 	}
 
@@ -568,11 +566,13 @@ static void ChangePaintTo( const CCommand& args )
 	{
 		ChangePaintColor( PORTAL_POWER );
 	}
-	// FIXME: Bring back for DLC2
-	/*else if ( V_stricmp( args[1], "reflect" ) == 0 )
+	else if ( V_stricmp( args[1], "reflect" ) == 0 )
 	{
 		ChangePaintColor( REFLECT_POWER );
-	}*/
+	}
+	else if ( V_stricmp( args[1], "sticky" ) == 0 )
+	{
+		ChangePaintColor( STICK_POWER );
+	}
 }
-// FIXME: Bring this back for DLC2
 static ConCommand changepaintto("changepaintto", ChangePaintTo );

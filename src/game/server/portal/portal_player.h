@@ -1,4 +1,4 @@
-//========= Copyright © 1996-2005, Valve Corporation, All rights reserved. ============//
+//========= Copyright ï¿½ 1996-2005, Valve Corporation, All rights reserved. ============//
 //
 // Purpose: 
 //
@@ -628,7 +628,7 @@ private: // PAINT SPECIFIC
 	int m_nBounceCount;	// Number of bounces in a row without touching the ground
 	float m_LastGroundBouncePlaneDistance;
 	float m_flLastSuppressedBounceTime;
-	float m_flTimeSinceLastTouchedPower[3];
+	float m_flTimeSinceLastTouchedPower[4];
 	int m_nPortalsEnteredInAirFlags;
 	int m_nAirTauntCount;
 

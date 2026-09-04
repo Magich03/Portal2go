@@ -1,4 +1,4 @@
-//========== Copyright © 2005, Valve Corporation, All rights reserved. ========
+//========== Copyright ï¿½ 2005, Valve Corporation, All rights reserved. ========
 //
 // Purpose:
 //
@@ -31,6 +31,7 @@ static void RegisterPaintColors()
 	static ConVarRef speed_paint_color( "speed_paint_color" );
 	static ConVarRef bounce_paint_color( "bounce_paint_color" );
 	static ConVarRef reflect_paint_color( "reflect_paint_color" );
+	static ConVarRef stick_paint_color( "stick_paint_color" );
 	static ConVarRef portal_paint_color( "portal_paint_color" );
 	static ConVarRef erase_color( "erase_color" );
 
@@ -38,6 +39,7 @@ static void RegisterPaintColors()
 	g_PaintColors[BOUNCE_POWER]		= bounce_paint_color.GetColor();
 	g_PaintColors[PORTAL_POWER]		= portal_paint_color.GetColor();
 	g_PaintColors[REFLECT_POWER]	= reflect_paint_color.GetColor();
+	g_PaintColors[STICK_POWER]		= stick_paint_color.GetColor();
 	g_PaintColors[NO_POWER]			= erase_color.GetColor();
 
 #endif

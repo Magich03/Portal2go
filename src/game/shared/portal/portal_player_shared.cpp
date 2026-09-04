@@ -2282,10 +2282,12 @@ void CPortal_Player::PlayPaintSounds( const PaintPowerChoiceResultArray& touched
 	{
 		"Player.EnterBouncePaint",
 		"Player.ExitBouncePaint",
-		"Player.EnterStickPaint",
-		"Player.ExitStickPaint",
+		"Player.EnterReflectPaint",
+		"Player.ExitReflectPaint",
 		"Player.EnterSpeedPaint",
-		"Player.ExitSpeedPaint"
+		"Player.ExitSpeedPaint",
+		"Player.EnterStickPaint",
+		"Player.ExitStickPaint"
 	};
 
 	CRecipientFilter filter;
@@ -2294,9 +2296,15 @@ void CPortal_Player::PlayPaintSounds( const PaintPowerChoiceResultArray& touched
 	bool isTouchingPower[PAINT_POWER_TYPE_COUNT - 1] = { false };
 	isTouchingPower[BOUNCE_POWER] = BOUNCE_POWER < touchedPowers.Count() &&
 									touchedPowers[BOUNCE_POWER].pPaintPower != NULL;
+	isTouchingPower[REFLECT_POWER] = REFLECT_POWER < touchedPowers.Count() &&
+									touchedPowers[REFLECT_POWER].pPaintPower != NULL &&
+									!touchedPowers[REFLECT_POWER].bWasIgnored;
 	isTouchingPower[SPEED_POWER] = SPEED_POWER < touchedPowers.Count() &&
 								   touchedPowers[SPEED_POWER].pPaintPower != NULL &&
 								   !touchedPowers[SPEED_POWER].bWasIgnored;
+	isTouchingPower[STICK_POWER] = STICK_POWER < touchedPowers.Count() &&
+								   touchedPowers[STICK_POWER].pPaintPower != NULL &&
+								   !touchedPowers[STICK_POWER].bWasIgnored;
 
 	// Go through all usable powers and check if we just stepped onto or off of it
 	for( int i = 0; i < PAINT_POWER_TYPE_COUNT - 1; ++i )

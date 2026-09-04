@@ -1,4 +1,4 @@
-//========= Copyright © 1996-2009, Valve Corporation, All rights reserved. ============//
+//========= Copyright ï¿½ 1996-2009, Valve Corporation, All rights reserved. ============//
 //
 // Purpose: Implements the paint color manager class.
 //
@@ -13,8 +13,8 @@
 // Paint color ConVars
 ConVar speed_paint_color( "speed_paint_color", "255 106 0 255", FCVAR_REPLICATED, "Color for speed paint" );
 ConVar bounce_paint_color( "bounce_paint_color", "0 165 255 255", FCVAR_REPLICATED, "Color for bounce paint" );
-// FIXME: Bring this back for DLC2
-//ConVar reflect_paint_color( "reflect_paint_color", "0 255 0 255", FCVAR_REPLICATED, "Color for reflect paint" );
+ConVar reflect_paint_color( "reflect_paint_color", "0 255 0 255", FCVAR_REPLICATED, "Color for reflect paint" );
+ConVar stick_paint_color( "stick_paint_color", "255 215 0 255", FCVAR_REPLICATED, "Color for sticky paint" );
 ConVar portal_paint_color( "portal_paint_color", "128 128 128 255", FCVAR_REPLICATED, "Color for portal paint");
 ConVar erase_color( "erase_color", "0 0 0 0", FCVAR_REPLICATED, "Color for erase" );
 ConVar erase_visual_color( "erase_visual_color", "255 255 255 255", FCVAR_REPLICATED, "Color for erase that is rendered" );
@@ -95,7 +95,9 @@ Color MapPowerToColor( int paintPowerType )
 	case SPEED_POWER:
 		return speed_paint_color.GetColor();
 	case REFLECT_POWER:
-		return speed_paint_color.GetColor();// FIXME: Bring this back for DLC2 reflect_paint_color.GetColor();
+		return reflect_paint_color.GetColor();
+	case STICK_POWER:
+		return stick_paint_color.GetColor();
 	case PORTAL_POWER:
 		return portal_paint_color.GetColor();
 	default:

@@ -1,4 +1,4 @@
-//========= Copyright © 1996-2009, Valve Corporation, All rights reserved. ============//
+//========= Copyright ï¿½ 1996-2009, Valve Corporation, All rights reserved. ============//
 //
 //=============================================================================//
 #include "cbase.h"
@@ -23,8 +23,9 @@
 const char* const CPaintStreamManager::m_pPaintMaterialNames[PAINT_POWER_TYPE_COUNT_PLUS_NO_POWER] =
 {
 	"paintblobs/blob_surface_bounce",
-	"paintblobs/blob_surface_stick", // FIXME: Bring this back for DLC2 "paintblobs/blob_surface_reflect",
+	"paintblobs/blob_surface_reflect",
 	"paintblobs/blob_surface_speed",
+	"paintblobs/blob_surface_stick",
 	"paintblobs/blob_surface_portal",
 	"paintblobs/blob_surface_erase"
 };
@@ -373,8 +374,9 @@ struct SplatParticlesForPaint_t
 SplatParticlesForPaint_t paintSplatCallbacks[] =
 {
 	{ BOUNCE_POWER,	"paint_splat_bounce_01" },
-	{ REFLECT_POWER,"paint_splat_stick_01" }, // FIXME: Bring this back for DLC2 { REFLECT_POWER,"paint_splat_reflect_01" },
+	{ REFLECT_POWER,"paint_splat_reflect_01" },
 	{ SPEED_POWER,	"paint_splat_speed_01" },
+	{ STICK_POWER,	"paint_splat_stick_01" },
 	{ PORTAL_POWER,	"paint_splat_erase_01" },
 	{ NO_POWER,		"paint_splat_erase_01" },
 };

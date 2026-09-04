@@ -11,6 +11,7 @@ enum PaintPowerType
 	BOUNCE_POWER,
 	REFLECT_POWER,
 	SPEED_POWER,
+	STICK_POWER,
 
 	// Add new powers here
 	PORTAL_POWER,

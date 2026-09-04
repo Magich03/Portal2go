@@ -1,4 +1,4 @@
-//========= Copyright © 1996-2009, Valve Corporation, All rights reserved. ============//
+//========= Copyright ï¿½ 1996-2009, Valve Corporation, All rights reserved. ============//
 //
 // Purpose: Implements the PaintPowerInfo structure for storing information about
 //			the paint powers used.
@@ -94,6 +94,12 @@ PAINT_POWER_CPP_INLINE bool IsReflectPower( const PaintPowerInfo_t& power )
 }
 
 
+PAINT_POWER_CPP_INLINE bool IsStickPower( const PaintPowerInfo_t& power )
+{
+	return power.m_PaintPowerType == STICK_POWER;
+}
+
+
 PAINT_POWER_CPP_INLINE bool IsPortalPower( const PaintPowerInfo_t& power )
 {
 	return power.m_PaintPowerType == PORTAL_POWER;
@@ -147,7 +153,10 @@ char const *const PowerTypeToString( PaintPowerType type )
 			return "Speed";
 
 		case REFLECT_POWER:
-			return "Speed";// FIXME: Bring this back for DLC2 "Reflect";
+			return "Reflect";
+
+		case STICK_POWER:
+			return "Sticky";
 
 		case PORTAL_POWER:
 			return "Portal";

@@ -1,4 +1,4 @@
-//===== Copyright © 1996-2009, Valve Corporation, All rights reserved. ======//
+//===== Copyright ï¿½ 1996-2009, Valve Corporation, All rights reserved. ======//
 //
 // Purpose: Declares the base class for paint power users that are props.
 //
@@ -20,6 +20,7 @@
 
 #include "paint_power_user.h"
 #include "stick_partner.h"
+#include "physics_shared.h"
 
 #include "material_index_data_ops_proxy.h"
 
@@ -28,6 +29,12 @@ char const* const PROP_PAINT_POWER_USER_DATA_CLASS_NAME = "PropPaintPowerUser";
 char const* const UPDATE_PAINT_POWER_CONTEXT = "UpdatePaintPowers";
 
 const float PROP_PAINT_POWER_USER_PICKUP_DROP_TIME = 0.5f;
+
+// 0 means the stick paint constraint is unbreakable by force/torque - it can only be
+// released by re-painting the prop or picking it up.
+// NOTE: static because this header is included by multiple translation units.
+static ConVar stick_paint_break_force( "stick_paint_break_force", "0", FCVAR_REPLICATED, "Force required to break a sticky paint bond (0 = unbreakable)" );
+static ConVar stick_paint_break_torque( "stick_paint_break_torque", "0", FCVAR_REPLICATED, "Torque required to break a sticky paint bond (0 = unbreakable)" );
 
 //=============================================================================
 // class PropPaintPowerUser
@@ -87,6 +94,17 @@ private:
 	virtual PaintPowerState ActivateBouncePower( PaintPowerInfo_t& powerInfo );
 	virtual PaintPowerState UseBouncePower( PaintPowerInfo_t& powerInfo );
 	virtual PaintPowerState DeactivateBouncePower( PaintPowerInfo_t& powerInfo );
+
+	virtual PaintPowerState ActivateStickPower( PaintPowerInfo_t& powerInfo );
+	virtual PaintPowerState UseStickPower( PaintPowerInfo_t& powerInfo );
+	virtual PaintPowerState DeactivateStickPower( PaintPowerInfo_t& powerInfo );
+
+	//-------------------------------------------------------------------------
+	// Stick Power Data
+	//-------------------------------------------------------------------------
+	CUtlVector< StickPartner_t > m_StickPartners;
+
+	void ReleaseAllStickPartners();
 };
 
 
@@ -143,6 +161,7 @@ PropPaintPowerUser<BasePropType>::PropPaintPowerUser()
 template< typename BasePropType >
 PropPaintPowerUser<BasePropType>::~PropPaintPowerUser()
 {
+	ReleaseAllStickPartners();
 }
 
 
@@ -216,6 +235,10 @@ void PropPaintPowerUser<BasePropType>::UpdatePaintPowersFromContacts()
 
 			//Set the timer
 			m_flPickedUpTime = gpGlobals->curtime;
+
+			// Getting grabbed by the player breaks any stick paint constraints holding us in place.
+			ReleaseAllStickPartners();
+			this->ForcePaintPowerToState( STICK_POWER, INACTIVE_PAINT_POWER );
 		}
 	}
 	else
@@ -456,6 +479,99 @@ PaintPowerState PropPaintPowerUser<BasePropType>::DeactivateBouncePower( PaintPo
 {
 	return INACTIVE_PAINT_POWER;
 }
+
+
+//-----------------------------------------------------------------------------
+// Sticky paint: glue this prop to whatever it's touching using a breakable
+// fixed physics constraint, reusing the (previously unused) StickPartner_t
+// bookkeeping struct that was already part of this class.
+//-----------------------------------------------------------------------------
+template< typename BasePropType >
+PaintPowerState PropPaintPowerUser<BasePropType>::ActivateStickPower( PaintPowerInfo_t& info )
+{
+#if !defined( CLIENT_DLL )
+	// Held props don't stick - the player is already holding onto them.
+	if( !m_bHeldByPlayer )
+	{
+		IPhysicsObject* pMyPhys = this->VPhysicsGetObject();
+
+		if( pMyPhys )
+		{
+			CBaseEntity* pOther = info.m_HandleToOther.Get() != NULL ?
+				EntityFromEntityHandle( info.m_HandleToOther.Get() ) : NULL;
+
+			IPhysicsObject* pOtherPhys = pOther ? pOther->VPhysicsGetObject() : NULL;
+			if( !pOtherPhys )
+			{
+				// Stuck to the world (or something with no physics object of its own).
+				pOtherPhys = g_PhysWorldObject;
+			}
+
+			if( pOtherPhys && pOtherPhys != pMyPhys )
+			{
+				constraint_fixedparams_t fixed;
+				fixed.Defaults();
+				fixed.InitWithCurrentObjectState( pOtherPhys, pMyPhys );
+				fixed.constraint.Defaults();
+				fixed.constraint.forceLimit = stick_paint_break_force.GetFloat();
+				fixed.constraint.torqueLimit = stick_paint_break_torque.GetFloat();
+
+				StickPartner_t partner;
+				partner.m_other.Set( pOther );
+				partner.m_contacts.AddToTail( info.m_ContactPoint );
+				partner.m_pConstraint = physenv->CreateFixedConstraint( pOtherPhys, pMyPhys, NULL, fixed );
+
+				if( partner.m_pConstraint )
+				{
+					m_StickPartners.AddToTail( partner );
+				}
+
+				if( pMyPhys->IsAsleep() )
+				{
+					pMyPhys->Wake();
+				}
+			}
+		}
+	}
+#endif // !CLIENT_DLL
+
+	return ACTIVE_PAINT_POWER;
+}
+
+
+template< typename BasePropType >
+PaintPowerState PropPaintPowerUser<BasePropType>::UseStickPower( PaintPowerInfo_t& powerInfo )
+{
+	// Being picked up while stuck breaks the bond immediately (see UpdatePaintPowersFromContacts),
+	// so as long as we're active here we just stay stuck.
+	return ACTIVE_PAINT_POWER;
+}
+
+
+template< typename BasePropType >
+PaintPowerState PropPaintPowerUser<BasePropType>::DeactivateStickPower( PaintPowerInfo_t& powerInfo )
+{
+	ReleaseAllStickPartners();
+	return INACTIVE_PAINT_POWER;
+}
+
+
+template< typename BasePropType >
+void PropPaintPowerUser<BasePropType>::ReleaseAllStickPartners()
+{
+#if !defined( CLIENT_DLL )
+	FOR_EACH_VEC( m_StickPartners, i )
+	{
+		if( m_StickPartners[i].m_pConstraint )
+		{
+			physenv->DestroyConstraint( m_StickPartners[i].m_pConstraint );
+		}
+	}
+#endif // !CLIENT_DLL
+
+	m_StickPartners.RemoveAll();
+}
+
 
 template< typename BasePropType >
 int PropPaintPowerUser<BasePropType>::GetSpeedMaterialIndex()

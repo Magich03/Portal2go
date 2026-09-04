@@ -53,8 +53,8 @@ BEGIN_DATADESC( CPaintPowerPickup )
 	DEFINE_KEYFIELD( m_PaintPowerType, FIELD_INTEGER, "PaintType" )
 END_DATADESC()
 
-//LINK_ENTITY_TO_CLASS( item_paint_power_pickup, CPaintPowerPickup );
-//PRECACHE_REGISTER( item_paint_power_pickup );
+LINK_ENTITY_TO_CLASS( item_paint_power_pickup, CPaintPowerPickup );
+PRECACHE_REGISTER( item_paint_power_pickup );
 
 
 CPaintPowerPickup::CPaintPowerPickup()

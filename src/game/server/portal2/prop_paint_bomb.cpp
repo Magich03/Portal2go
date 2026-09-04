@@ -102,6 +102,9 @@ void CPropPaintBomb::Precache( void )
 		PrecacheParticleSystem( "paint_bomb_speed" );
 		break;
 	case REFLECT_POWER:
+		PrecacheParticleSystem( "paint_bomb_reflect" );
+		break;
+	case STICK_POWER:
 		PrecacheParticleSystem( "paint_bomb_stick" );
 		break;
 	default:
@@ -218,6 +221,9 @@ void DispatchDryBombParticleEffect( const Vector& pos, PaintPowerType paintType,
 		DispatchParticleEffect( "paint_bomb_speed", pos, angSplash );
 		break;
 	case REFLECT_POWER:
+		DispatchParticleEffect( "paint_bomb_reflect", pos, angSplash );
+		break;
+	case STICK_POWER:
 		DispatchParticleEffect( "paint_bomb_stick", pos, angSplash );
 		break;
 	case PORTAL_POWER:

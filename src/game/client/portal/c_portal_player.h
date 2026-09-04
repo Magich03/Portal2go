@@ -638,7 +638,7 @@ private: // PAINT SPECIFIC
 	bool m_bDoneCorrectPitch;
 	bool m_bJumpWasPressedWhenForced;	// The jump button was actually pressed when ForceDuckThisFrame() was called
 
-	float m_flTimeSinceLastTouchedPower[3];
+	float m_flTimeSinceLastTouchedPower[4];
 
 	bool m_bDoneAirTauntHint;
 

@@ -1,4 +1,4 @@
-//========= Copyright © 1996-2009, Valve Corporation, All rights reserved. ============//
+//========= Copyright ï¿½ 1996-2009, Valve Corporation, All rights reserved. ============//
 //
 // Purpose: Declares the base class for all paint power users.
 //
@@ -180,6 +180,13 @@ private:
 	virtual PaintPowerState ActivateBouncePower( PaintPowerInfo_t& powerInfo ) = 0;
 	virtual PaintPowerState UseBouncePower( PaintPowerInfo_t& powerInfo ) = 0;
 	virtual PaintPowerState DeactivateBouncePower( PaintPowerInfo_t& powerInfo ) = 0;
+
+	// Not pure: most paint power users (e.g. the player) have no special behavior for
+	// stick paint and can just fall back on the default (NoPower-style) implementation.
+	// Entities that actually glue to surfaces (see PropPaintPowerUser) override these.
+	virtual PaintPowerState ActivateStickPower( PaintPowerInfo_t& powerInfo );
+	virtual PaintPowerState UseStickPower( PaintPowerInfo_t& powerInfo );
+	virtual PaintPowerState DeactivateStickPower( PaintPowerInfo_t& powerInfo );
 
 	virtual PaintPowerState ActivateNoPower( PaintPowerInfo_t& powerInfo );
 	virtual PaintPowerState UseNoPower( PaintPowerInfo_t& powerInfo );
@@ -527,6 +534,9 @@ PaintPowerState PaintPowerUser<BaseEntityType>::ActivatePaintPower( PaintPowerIn
 		case REFLECT_POWER:
 			return ActivateNoPower( power );
 
+		case STICK_POWER:
+			return ActivateStickPower( power );
+
 		case NO_POWER:
 			return ActivateNoPower( power );
 
@@ -555,6 +565,9 @@ PaintPowerState PaintPowerUser<BaseEntityType>::UsePaintPower( PaintPowerInfo_t&
 		case REFLECT_POWER:
 			return UseNoPower( power );
 
+		case STICK_POWER:
+			return UseStickPower( power );
+
 		case NO_POWER:
 			return UseNoPower( power );
 
@@ -582,6 +595,9 @@ PaintPowerState PaintPowerUser<BaseEntityType>::DeactivatePaintPower( PaintPower
 
 		case REFLECT_POWER:
 			return DeactivateNoPower( power );
+
+		case STICK_POWER:
+			return DeactivateStickPower( power );
 
 		case NO_POWER:
 			return DeactivateNoPower( power );
@@ -655,6 +671,27 @@ template< typename BaseEntityType >
 PaintPowerState PaintPowerUser<BaseEntityType>::DeactivateNoPower( PaintPowerInfo_t& powerInfo )
 {
 	return INACTIVE_PAINT_POWER;
+}
+
+
+template< typename BaseEntityType >
+PaintPowerState PaintPowerUser<BaseEntityType>::ActivateStickPower( PaintPowerInfo_t& powerInfo )
+{
+	return ActivateNoPower( powerInfo );
+}
+
+
+template< typename BaseEntityType >
+PaintPowerState PaintPowerUser<BaseEntityType>::UseStickPower( PaintPowerInfo_t& powerInfo )
+{
+	return UseNoPower( powerInfo );
+}
+
+
+template< typename BaseEntityType >
+PaintPowerState PaintPowerUser<BaseEntityType>::DeactivateStickPower( PaintPowerInfo_t& powerInfo )
+{
+	return DeactivateNoPower( powerInfo );
 }
 
 
