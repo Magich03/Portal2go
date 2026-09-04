@@ -193,6 +193,12 @@ ConVar sv_speed_paint_straf_accel_scale("sv_speed_paint_straf_accel_scale", "0.7
 //stick convars
 ConVar stick_surface_transition_delay("stick_surface_transition_delay", ".5f", FCVAR_REPLICATED | FCVAR_CHEAT, "How long to wait after transitioning to a new stick surface before the player can transition again.");
 ConVar player_can_unstick_by_pushing("player_can_unstick_by_pushing", "1", FCVAR_REPLICATED | FCVAR_DEVELOPMENTONLY, "Allow/disallow players to walk off a sticky surface into the air with WASD.");
+ConVar sv_max_stick_time("sv_max_stick_time", "4.0f", FCVAR_REPLICATED, "Amount of time you can stick on a wall or ceiling before falling off.");
+ConVar sv_max_stick_delay("sv_max_stick_delay", ".333333f", FCVAR_REPLICATED, "How long the deactivation delay lasts for stick paint.");
+ConVar sv_max_stick_gravity_scale("sv_max_stick_gravity_scale", "3.0f", FCVAR_REPLICATED, "How much gravity ramps up (relative to normal) the longer the player stays stuck to a wall or ceiling.");
+ConVar sv_stick_slip_speed("sv_stick_slip_speed", "40.0f", FCVAR_REPLICATED, "How fast stick paint pulls the player down the wall as their stick time runs out.");
+ConVar sv_stick_time_regen_delay("sv_stick_time_regen_delay", "1.0f", FCVAR_REPLICATED, "How soon until stick time will start to regenerate after leaving a wall or ceiling.");
+ConVar sv_stick_regen_rate("sv_stick_regen_rate", "2.0f", FCVAR_REPLICATED, "How fast stick time regenerates.");
 
 //stick camera
 ConVar stick_cam_correct_pitch("stick_cam_correct_pitch", "1", FCVAR_REPLICATED);
@@ -3057,6 +3063,113 @@ PaintPowerState CPortal_Player::DeactivateBouncePower( PaintPowerInfo_t& info )
 	// Bring input scale back to 1
 	return IsEmptyRange( GetSurfacePaintPowerInfo() ) ? INACTIVE_PAINT_POWER : DEACTIVATING_PAINT_POWER;
 }
+
+
+//-----------------------------------------------------------------------------
+// Purpose: The player sticks to (and can walk on) whatever surface they're
+//			touching that's painted with sticky paint - walls, ceilings, etc.
+//			Reorientation reuses the same camera/collision machinery that
+//			already handles reorienting the player through wall/ceiling portals.
+//-----------------------------------------------------------------------------
+PaintPowerState CPortal_Player::ActivateStickPower( PaintPowerInfo_t& info )
+{
+	if ( pl.deadflag )
+		return ACTIVE_PAINT_POWER;
+
+	// A short cooldown after running out of stick time before the player can re-stick.
+	if ( gpGlobals->curtime < m_flStickReactivateTime )
+		return ACTIVE_PAINT_POWER;
+
+	// Debounce - don't re-trigger the reorientation every tick while straddling an edge.
+	if ( gpGlobals->curtime - m_flLastStickTransitionTime < stick_surface_transition_delay.GetFloat() &&
+		 CloseEnough( info.m_SurfaceNormal, m_PortalLocal.m_StickNormal ) )
+	{
+		return ACTIVE_PAINT_POWER;
+	}
+
+	// Regenerate stick time based on how long it's been since we left a sticky wall/ceiling.
+	const float flTimeOff = gpGlobals->curtime - m_flStickDeactivatedTime;
+	if ( flTimeOff > sv_stick_time_regen_delay.GetFloat() )
+	{
+		const float flRegenAmount = ( flTimeOff - sv_stick_time_regen_delay.GetFloat() ) * sv_stick_regen_rate.GetFloat();
+		m_flCurrentStickTime = MAX( 0.f, m_flCurrentStickTime - flRegenAmount );
+	}
+
+	ReorientToStickNormal( info.m_SurfaceNormal );
+	m_flLastStickTransitionTime = gpGlobals->curtime;
+
+	return ACTIVE_PAINT_POWER;
+}
+
+
+PaintPowerState CPortal_Player::UseStickPower( PaintPowerInfo_t& info )
+{
+	if ( pl.deadflag )
+		return DEACTIVATING_PAINT_POWER;
+
+	if ( CloseEnough( info.m_SurfaceNormal, m_PortalLocal.m_StickNormal ) == false )
+	{
+		return ActivateStickPower( info );
+	}
+
+	// Standing on a sticky floor is free - only walls and ceilings drain stick time.
+	const bool bOnFloor = info.m_SurfaceNormal.z > 0.75f;
+	if ( bOnFloor )
+	{
+		SetGravity( 1.0f );
+		return ACTIVE_PAINT_POWER;
+	}
+
+	m_flCurrentStickTime += gpGlobals->frametime;
+
+	if ( m_flCurrentStickTime >= sv_max_stick_time.GetFloat() )
+	{
+		// Ran out of stick time - fall off the surface.
+		m_flStickReactivateTime = gpGlobals->curtime + sv_max_stick_delay.GetFloat();
+		return DEACTIVATING_PAINT_POWER;
+	}
+
+	// The longer we're stuck, the harder gravity pulls, and we slowly slip down the surface.
+	const float flStickFraction = clamp( m_flCurrentStickTime / sv_max_stick_time.GetFloat(), 0.f, 1.f );
+	SetGravity( 1.0f + flStickFraction * ( sv_max_stick_gravity_scale.GetFloat() - 1.0f ) );
+
+	Vector velocity = GetAbsVelocity();
+	velocity -= info.m_SurfaceNormal * ( flStickFraction * sv_stick_slip_speed.GetFloat() * gpGlobals->frametime );
+	SetAbsVelocity( velocity );
+
+	return ACTIVE_PAINT_POWER;
+}
+
+
+PaintPowerState CPortal_Player::DeactivateStickPower( PaintPowerInfo_t& info )
+{
+	SetGravity( 1.0f );
+
+	m_flStickDeactivatedTime = gpGlobals->curtime;
+
+	ReorientToStickNormal( ABS_UP );
+	m_flLastStickTransitionTime = gpGlobals->curtime;
+
+	return INACTIVE_PAINT_POWER;
+}
+
+
+//-----------------------------------------------------------------------------
+// Purpose: Reorients the player's up vector (and collision bounds) to a new
+//			surface normal, reusing the same camera-snap machinery already
+//			used to reorient the player through wall/ceiling portals.
+//-----------------------------------------------------------------------------
+void CPortal_Player::ReorientToStickNormal( const Vector& vNewStickNormal )
+{
+	m_PortalLocal.m_OldStickNormal = m_PortalLocal.m_StickNormal;
+	m_PortalLocal.m_StickNormal = vNewStickNormal;
+	m_PortalLocal.m_Up = vNewStickNormal;
+
+	SnapCamera( STICK_CAMERA_SURFACE_TRANSITION, false );
+
+	RecomputeBoundsForOrientation();
+}
+
 
 void CPortal_Player::OnBounced( float fTimeOffset )
 {

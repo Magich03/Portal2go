@@ -590,6 +590,10 @@ private: // PAINT SPECIFIC
 	virtual PaintPowerState UseBouncePower( PaintPowerInfo_t& powerInfo );
 	virtual PaintPowerState DeactivateBouncePower( PaintPowerInfo_t& powerInfo );
 
+	virtual PaintPowerState ActivateStickPower( PaintPowerInfo_t& powerInfo );
+	virtual PaintPowerState UseStickPower( PaintPowerInfo_t& powerInfo );
+	virtual PaintPowerState DeactivateStickPower( PaintPowerInfo_t& powerInfo );
+
 	void PlayPaintSounds( const PaintPowerChoiceResultArray& touchedPowers );
 	void UpdatePaintedPower();
 	void UpdateAirInputScaleFadeIn();
@@ -616,6 +620,7 @@ private: // PAINT SPECIFIC
 	void RotateUpVector( Vector& vForward, Vector& vUp );
 	void SnapCamera( StickCameraState nCameraState, bool bLookingInBadDirection );
 	void PostTeleportationCameraFixup( const CPortal_Base2D *pEnteredPortal );
+	void ReorientToStickNormal( const Vector& vNewStickNormal );
 
 	// Paint power debug
 	void DrawJumpHelperDebug( PaintPowerConstIter begin, PaintPowerConstIter end, float duration, bool noDepthTest, const PaintPowerInfo_t* pSelected ) const;
@@ -639,6 +644,9 @@ private: // PAINT SPECIFIC
 	bool m_bJumpWasPressedWhenForced;	// The jump button was actually pressed when ForceDuckThisFrame() was called
 
 	float m_flTimeSinceLastTouchedPower[4];
+	float m_flStickReactivateTime;			// curtime must exceed this before re-activating stick power (post fall-off cooldown)
+	float m_flStickDeactivatedTime;		// curtime we last left a sticky wall/ceiling, used to regenerate stick time
+	float m_flLastStickTransitionTime;		// curtime of the last stick surface reorientation, to debounce chattery transitions
 
 	bool m_bDoneAirTauntHint;
 
