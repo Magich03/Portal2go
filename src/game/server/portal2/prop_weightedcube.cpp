@@ -30,8 +30,7 @@ ConVar reflector_cube_disabled_use_touch_check( "reflector_cube_disabled_use_tou
 
 ConVar sv_portal2_pickup_hint_range( "sv_portal2_pickup_hint_range", "350.0", FCVAR_NONE );
 
-// FIXME: Bring this back for DLC2
-//extern ConVar sv_schrodinger_laser_world_aligned;
+ConVar sv_schrodinger_laser_world_aligned( "sv_schrodinger_laser_world_aligned", "0", FCVAR_REPLICATED, "If set, a Schrodinger cube's laser stays aligned to the world instead of the cube, so the cube doesn't need to be carried at a fixed angle." );
 
 //Standard cube skins
 enum StandardCubeSkinType_t
@@ -1077,7 +1076,7 @@ void CPropWeightedCube::OnPhysGunDrop( CBasePlayer *pPhysGunUser, PhysGunDrop_t 
 //-----------------------------------------------------------------------------
 bool CPropWeightedCube::HasPreferredCarryAnglesForPlayer( CBasePlayer *pPlayer )
 {
-	return ( m_nCubeType == CUBE_REFLECTIVE ) || ( /*FIXME: Bring back for DLC2 !sv_schrodinger_laser_world_aligned.GetBool() && */ m_nCubeType == CUBE_SCHRODINGER && m_hLaser.Get() );
+	return ( m_nCubeType == CUBE_REFLECTIVE ) || ( !sv_schrodinger_laser_world_aligned.GetBool() && m_nCubeType == CUBE_SCHRODINGER && m_hLaser.Get() );
 }
 
 //-----------------------------------------------------------------------------
