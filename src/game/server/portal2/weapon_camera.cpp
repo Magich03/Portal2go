@@ -20,6 +20,7 @@
 #include "weapon_camera.h"
 #include "portal_player.h"
 #include "photo_inventory.h"
+#include "prop_swap.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -82,7 +83,9 @@ CBaseAnimating *CWeaponCamera::FindCapturableEntity( void )
 
 //-----------------------------------------------------------------------------
 // Purpose: Capture whatever we're looking at into the player's photo
-//			inventory, then hand off to weapon_placement.
+//			inventory, then hand off to weapon_placement. prop_swap is a
+//			special case - it swaps places with the player on the spot
+//			instead of being picked up.
 //-----------------------------------------------------------------------------
 void CWeaponCamera::PrimaryAttack( void )
 {
@@ -92,12 +95,19 @@ void CWeaponCamera::PrimaryAttack( void )
 	if ( !pOwner )
 		return;
 
-	if ( pOwner->GetPhotoInventory()->HasPhoto() )
-		return;	// already holding a capture - place it with weapon_placement first
-
 	CBaseAnimating *pTarget = FindCapturableEntity();
 	if ( !pTarget )
 		return;
+
+	CPropSwap *pSwapProp = dynamic_cast<CPropSwap*>( pTarget );
+	if ( pSwapProp )
+	{
+		pSwapProp->SwapWithPlayer( pOwner );
+		return;
+	}
+
+	if ( pOwner->GetPhotoInventory()->HasPhoto() )
+		return;	// already holding a capture - place it with weapon_placement first
 
 	if ( !pOwner->GetPhotoInventory()->CapturePhoto( pTarget ) )
 		return;
