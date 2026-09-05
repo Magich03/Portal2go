@@ -336,6 +336,8 @@ public:
 	void	ShowViewFinder( void );
 	void	HideViewFinder( void );
 
+	void	SetPlacingPhoto( bool bPlacing ) { m_PortalLocal.m_bPlacingPhoto = bPlacing; }
+
 	// Coop ping effect
 	void	PlayCoopPingEffect( void );
 

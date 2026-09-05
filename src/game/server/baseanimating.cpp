@@ -227,6 +227,9 @@ BEGIN_DATADESC( CBaseAnimating )
 
 #ifdef PORTAL2
 	DEFINE_OUTPUT( m_OnFizzled, "OnFizzled" ),
+	DEFINE_KEYFIELD( m_bCanBeCaptured, FIELD_BOOLEAN, "CanBeCaptured" ),
+	DEFINE_OUTPUT( m_OnCameraCapture, "OnCameraCapture" ),
+	DEFINE_OUTPUT( m_OnCameraRelease, "OnCameraRelease" ),
 #endif // PORTAL2
 
 	DEFINE_KEYFIELD( m_bSuppressAnimSounds, FIELD_BOOLEAN, "SuppressAnimSounds" ),

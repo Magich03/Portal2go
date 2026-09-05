@@ -388,6 +388,9 @@ public:
 public:
 	void SetObjectScaleLevel( int nScaleLevel ) { m_nObjectScaleLevel = nScaleLevel; }
 	int GetObjectScaleLevel( void ) { return m_nObjectScaleLevel; }
+
+	bool CanBeCaptured( void ) { return m_bCanBeCaptured; }
+	void SetCanBeCaptured( bool bCanBeCaptured ) { m_bCanBeCaptured = bCanBeCaptured; }
 protected:
 	int	m_nObjectScaleLevel;
 	bool m_bCanBeCaptured;			// Set true this prop allows capture by weapon_camera
@@ -477,7 +480,9 @@ public:
 
 #if defined ( PORTAL2 )
 	COutputEvent m_OnFizzled;		// Fizzled by a fizzler
-#endif // PORTAL2 
+	COutputEvent m_OnCameraCapture;	// Captured by weapon_camera
+	COutputEvent m_OnCameraRelease;	// Placed back into the world by weapon_camera
+#endif // PORTAL2
 
 private:
 	CStudioHdr			*m_pStudioHdr;
