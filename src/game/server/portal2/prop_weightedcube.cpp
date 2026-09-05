@@ -396,17 +396,17 @@ void CPropWeightedCube::Activate( void )
 {
 	SetPaintedMaterial( (PaintPowerType)( m_PrePaintedPower ) );
 
-#if 0
-	if ( !m_pSchrodingerSound )
+	if ( m_nCubeType == CUBE_SCHRODINGER && !m_pSchrodingerSound )
 	{
 		CSoundEnvelopeController &controller = CSoundEnvelopeController::GetController();
 
 		CPASAttenuationFilter filter( this );
 
+		// Starts silent (volume 0); UpdateSchrodingerSound() ramps the volume up
+		// as this cube gets closer to its twin.
 		m_pSchrodingerSound = controller.SoundCreate( filter, entindex(), "music.laser_node_02.play" );
 		controller.Play( m_pSchrodingerSound, 0, RandomFloat( 99, 101 ) );
 	}
-#endif
 
 	BaseClass::Activate();
 }
@@ -429,15 +429,13 @@ void CPropWeightedCube::UpdateOnRemove( void )
 		CTriggerPortalCleanser::FizzleBaseAnimating( NULL, pTwin );
 	}
 
-#if 0
-	CSoundEnvelopeController &controller = CSoundEnvelopeController::GetController();
+	if ( m_pSchrodingerSound )
+	{
+		CSoundEnvelopeController &controller = CSoundEnvelopeController::GetController();
 
-	controller.SoundDestroy( m_pSchrodingerSound );
-	m_pSchrodingerSound = NULL;
-
-	BaseClass::StopLoopingSounds();
-#endif
-
+		controller.SoundDestroy( m_pSchrodingerSound );
+		m_pSchrodingerSound = NULL;
+	}
 }
 
 //-----------------------------------------------------------------------------
