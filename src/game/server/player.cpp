@@ -6302,8 +6302,8 @@ void CBasePlayer::CheatImpulseCommands( int iImpulse )
 
 		#if defined( PORTAL2 )
 			// Give the player portal 2 stuff!
-			// weapon_camera handles both capture and placement - see weapon_camera.cpp.
 			GiveNamedItem( "weapon_camera" );
+			GiveNamedItem( "weapon_placement" );
 		#else // PORTAL2
 
 			// Give the player everything!

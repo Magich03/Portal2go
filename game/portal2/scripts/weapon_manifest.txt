@@ -2,8 +2,7 @@ weapon_manifest
 {
 	// portal2
 	"file"		"scripts/weapon_camera.txt"
-	// weapon_placement.txt intentionally left disabled: weapon_camera.cpp implements
-	// both capture and placement as one weapon rather than two separate ones.
+	"file"		"scripts/weapon_placement.txt"
 
 	// portal
 	"file"		"scripts/weapon_portalgun.txt"

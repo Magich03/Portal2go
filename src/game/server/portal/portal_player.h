@@ -27,6 +27,7 @@ class CPortal_Player;
 #include "ai_basenpc.h"
 #include "npc_security_camera.h"
 #include "portal_base2d.h"
+#include "photo_inventory.h"
 
 #if !defined( NO_STEAM ) && !defined( NO_STEAM_GAMECOORDINATOR )
 	#include "portal2_item_inventory.h"
@@ -338,6 +339,9 @@ public:
 
 	void	SetPlacingPhoto( bool bPlacing ) { m_PortalLocal.m_bPlacingPhoto = bPlacing; }
 
+	// F-Stop camera/placement - see photo_inventory.h
+	CPhotoInventory* GetPhotoInventory( void ) { return &m_PhotoInventory; }
+
 	// Coop ping effect
 	void	PlayCoopPingEffect( void );
 
@@ -378,6 +382,8 @@ public:
 protected:
 	mutable Vector m_vWorldSpaceCenterHolder; //WorldSpaceCenter() returns a reference, need an actual value somewhere
 	CNetworkVarEmbedded( CPortalPlayerLocalData, m_PortalLocal );
+
+	CPhotoInventory m_PhotoInventory;
 
 	CHandle< CNPC_SecurityCamera > m_hRemoteTauntCamera;
 
