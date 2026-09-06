@@ -1,10 +1,11 @@
 //========= Copyright 1996-2009, Valve Corporation, All rights reserved. ============//
 //
-// Purpose: A decorative air vent prop. Its gameplay effect (pushing the
-//			player/objects) comes from a separate trigger_airvent_push volume
-//			placed alongside it - this entity is just the visual model, same
-//			as the F-Stop/Exposure decompile shows it (a bare CBaseAnimating
-//			that defaults its model, nothing more).
+// Purpose: A capturable air vent. Owns its push volume automatically (no
+//			separate mapper-placed trigger needed) and, being a normal
+//			CBaseAnimating, gets picked up/placed/scaled by weapon_camera and
+//			weapon_placement like any other prop - except placing it back
+//			down at a different scale resizes its push volume and makes it
+//			blow harder or softer to match.
 //
 //=============================================================================//
 #ifndef PROP_AIR_VENT_H
@@ -15,12 +16,25 @@
 
 #include "props.h"
 
+class CTriggerAirVentPush;
+
 class CPropAirVent : public CDynamicProp
 {
 	DECLARE_CLASS( CPropAirVent, CDynamicProp );
 public:
 
 	virtual void Spawn( void );
+	virtual void Activate( void );
+
+	// CBaseAnimating capture hooks (see baseanimating.h)
+	virtual void OnCameraCaptured( void );
+	virtual void OnCameraPlaced( void );
+
+private:
+	void CreatePushTrigger( void );
+	void UpdatePushTrigger( void );
+
+	CHandle<CTriggerAirVentPush> m_hPushTrigger;
 };
 
 #endif // PROP_AIR_VENT_H

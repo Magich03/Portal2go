@@ -24,6 +24,9 @@ public:
 	virtual void Spawn( void );
 	virtual void Touch( CBaseEntity *pOther );
 
+	void SetPushSpeed( float flPushSpeed ) { m_flPushSpeed = flPushSpeed; }
+	float GetPushSpeed( void ) const { return m_flPushSpeed; }
+
 private:
 	float m_flPushSpeed;
 };

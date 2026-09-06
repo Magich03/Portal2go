@@ -391,6 +391,13 @@ public:
 
 	bool CanBeCaptured( void ) { return m_bCanBeCaptured; }
 	void SetCanBeCaptured( bool bCanBeCaptured ) { m_bCanBeCaptured = bCanBeCaptured; }
+
+	// Hooks for props that need to react to being picked up/put down by
+	// weapon_camera/weapon_placement beyond the generic hide-and-restore
+	// behavior in CPhotoInventory (e.g. prop_air_vent resizing its push
+	// trigger to match the new scale once placed).
+	virtual void OnCameraCaptured( void ) {}
+	virtual void OnCameraPlaced( void ) {}
 protected:
 	int	m_nObjectScaleLevel;
 	bool m_bCanBeCaptured;			// Set true this prop allows capture by weapon_camera

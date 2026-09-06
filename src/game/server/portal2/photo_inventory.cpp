@@ -39,6 +39,7 @@ bool CPhotoInventory::CapturePhoto( CBaseAnimating *pEntity )
 	pEntity->SetObjectScaleLevel( 0 );
 
 	pEntity->m_OnCameraCapture.FireOutput( pEntity, pEntity );
+	pEntity->OnCameraCaptured();
 
 	return true;
 }
@@ -67,6 +68,7 @@ void CPhotoInventory::PlacePhoto( const Vector &vecOrigin, const QAngle &angOrig
 	pEntity->SetObjectScaleLevel( m_nScaleLevel );
 
 	pEntity->m_OnCameraRelease.FireOutput( pEntity, pEntity );
+	pEntity->OnCameraPlaced();
 
 	m_hCapturedEntity = NULL;
 	m_nScaleLevel = 0;
@@ -91,6 +93,7 @@ void CPhotoInventory::ReleaseWithoutPlacing( void )
 	pEntity->SetRenderColorA( 255 );
 	pEntity->SetModelScale( 1.0f );
 	pEntity->SetObjectScaleLevel( 0 );
+	pEntity->OnCameraPlaced();
 
 	m_hCapturedEntity = NULL;
 	m_nScaleLevel = 0;
