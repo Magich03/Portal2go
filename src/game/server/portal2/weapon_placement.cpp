@@ -160,25 +160,11 @@ void CWeaponPlacement::PrimaryAttack( void )
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: Scale the held photo up a step. Only meaningful once the ghost is
-//			actually out - nothing to scale while still holding a flat polaroid.
-//-----------------------------------------------------------------------------
-void CWeaponPlacement::SecondaryAttack( void )
-{
-	CPortal_Player *pOwner = ToPortalPlayer( GetOwner() );
-	if ( !pOwner || !pOwner->GetPhotoInventory()->IsGhostActive() )
-		return;
-
-	m_flNextSecondaryAttack = gpGlobals->curtime + 0.2f;
-
-	pOwner->GetPhotoInventory()->ScaleUp();
-	EmitSound( "Weapon_Camera.StretchUp" );
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Scale the held photo down a step (Reload), and keep the preview
-//			tracking the player's aim every frame - both only once the ghost
-//			is actually out.
+// Purpose: Scale the held ghost with the mouse wheel (IN_WEAPON1/IN_WEAPON2 -
+//			see c_weapon_placement.cpp's KeyInput(), same technique the HL2
+//			gravity gun uses for its pull-distance control), and keep the
+//			preview tracking the player's aim every frame - both only once
+//			the ghost is actually out.
 //-----------------------------------------------------------------------------
 void CWeaponPlacement::ItemPostFrame( void )
 {
@@ -191,7 +177,12 @@ void CWeaponPlacement::ItemPostFrame( void )
 	if ( !pOwner->GetPhotoInventory()->IsGhostActive() )
 		return;
 
-	if ( pOwner->m_afButtonPressed & IN_RELOAD )
+	if ( pOwner->m_afButtonPressed & IN_WEAPON1 )
+	{
+		pOwner->GetPhotoInventory()->ScaleUp();
+		EmitSound( "Weapon_Camera.StretchUp" );
+	}
+	else if ( pOwner->m_afButtonPressed & IN_WEAPON2 )
 	{
 		pOwner->GetPhotoInventory()->ScaleDown();
 		EmitSound( "Weapon_Camera.StretchDown" );

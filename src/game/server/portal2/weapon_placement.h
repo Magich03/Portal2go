@@ -27,7 +27,6 @@ public:
 
 	virtual void	Precache();
 	virtual void	PrimaryAttack();
-	virtual void	SecondaryAttack();
 	virtual void	ItemPostFrame();
 	virtual void	UpdateOnRemove();
 
