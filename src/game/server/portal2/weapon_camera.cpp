@@ -29,11 +29,6 @@
 
 ConVar camera_capture_distance( "camera_capture_distance", "256", FCVAR_REPLICATED, "How far away weapon_camera can capture an object from." );
 
-// Must match NUM_LARGE_PHOTO_SLOTS in the client's portal_render_targets.h -
-// the server only needs the render target name string, not the client-only
-// render target singleton, so the count is duplicated here rather than shared.
-#define NUM_LARGE_PHOTO_SLOTS 3
-
 IMPLEMENT_SERVERCLASS_ST( CWeaponCamera, DT_WeaponCamera )
 END_SEND_TABLE()
 
@@ -89,20 +84,14 @@ CBaseAnimating *CWeaponCamera::FindCapturableEntity( void )
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: Cycle through the 3 _rt_LargePhotoN client render targets and tell
-//			the owner's client to render its current view into the one we
-//			picked (see CViewRender::CheckPendingPhotoSnapshot() in
-//			viewrender.cpp and CHudViewfinder::MsgFunc_TakePhoto() in
-//			hud_viewfinder.cpp), for the polaroid thumbnail in the HUD.
+// Purpose: Tell the owner's client to render its current view into the
+//			given _rt_LargePhotoN slot (see CViewRender::
+//			CheckPendingPhotoSnapshot() in viewrender.cpp and
+//			CHudViewfinder::MsgFunc_TakePhoto() in hud_viewfinder.cpp), for
+//			that slot's thumbnail in the HUD's 3-photo display.
 //-----------------------------------------------------------------------------
-void CWeaponCamera::SendPhotoSnapshot( CPortal_Player *pOwner, char *pszTextureNameOut, int nTextureNameSize )
+void CWeaponCamera::SendPhotoSnapshot( CPortal_Player *pOwner, int nSlot )
 {
-	static int s_nNextPhotoSlot = 0;
-	int nSlot = s_nNextPhotoSlot;
-	s_nNextPhotoSlot = ( s_nNextPhotoSlot + 1 ) % NUM_LARGE_PHOTO_SLOTS;
-
-	Q_snprintf( pszTextureNameOut, nTextureNameSize, "_rt_LargePhoto%d", nSlot );
-
 	CSingleUserRecipientFilter user( pOwner );
 	user.MakeReliable();
 	CUsrMsg_TakePhoto msg;
@@ -115,10 +104,11 @@ void CWeaponCamera::SendPhotoSnapshot( CPortal_Player *pOwner, char *pszTextureN
 //			it swaps places with the player on the spot instead of being
 //			captured at all. Props that override UsesDirectCapture() (like
 //			prop_air_vent) get carried+previewed directly, like before the
-//			polaroid step existed. Everything else becomes a polaroid: the
-//			real object is stashed out of the world and the player holds a
-//			flat 2D photo (item_photograph) until weapon_placement's first
-//			click brings it back as a scalable ghost.
+//			polaroid step existed - only one of those can be held at a time.
+//			Everything else becomes a polaroid: the real object is stashed
+//			out of the world and pushed onto a stack of up to 3, each shown
+//			as a flat 2D photo, until weapon_placement's first click on the
+//			most recent one brings it back as a scalable ghost.
 //-----------------------------------------------------------------------------
 void CWeaponCamera::PrimaryAttack( void )
 {
@@ -128,8 +118,10 @@ void CWeaponCamera::PrimaryAttack( void )
 	if ( !pOwner )
 		return;
 
-	if ( pOwner->GetPhotoInventory()->HasPhoto() )
-		return;	// already holding a capture - place it with weapon_placement first
+	CPhotoInventory *pInventory = pOwner->GetPhotoInventory();
+
+	if ( pInventory->IsGhostActive() )
+		return;	// something's actively out being placed - finish that first
 
 	CBaseAnimating *pTarget = FindCapturableEntity();
 	if ( !pTarget )
@@ -146,15 +138,23 @@ void CWeaponCamera::PrimaryAttack( void )
 
 	if ( pTarget->UsesDirectCapture() )
 	{
-		bCaptured = pOwner->GetPhotoInventory()->CaptureDirect( pTarget );
+		bCaptured = pInventory->CaptureDirect( pTarget );
 	}
 	else
 	{
+		if ( pInventory->IsStackFull() )
+			return;	// already holding the maximum of 3 photos - place one first
+
+		// Slot = stack position, so the client's 3 render targets always line
+		// up 1:1 with the HUD's 3 slot positions regardless of capture order.
+		int nSlot = pInventory->GetStackCount();
+		SendPhotoSnapshot( pOwner, nSlot );
+
 		char szTextureName[32];
-		SendPhotoSnapshot( pOwner, szTextureName, sizeof( szTextureName ) );
+		Q_snprintf( szTextureName, sizeof( szTextureName ), "_rt_LargePhoto%d", nSlot );
 
 		CItem_Photograph *pPolaroid = CreatePhotograph( pOwner->EyePosition(), pOwner->EyeAngles(), szTextureName );
-		bCaptured = pPolaroid && pOwner->GetPhotoInventory()->CapturePolaroid( pTarget, pPolaroid );
+		bCaptured = pPolaroid && pInventory->CapturePolaroid( pTarget, pPolaroid );
 
 		if ( !bCaptured && pPolaroid )
 		{

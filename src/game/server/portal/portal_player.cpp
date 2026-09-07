@@ -1940,6 +1940,11 @@ void CPortal_Player::PreThink( void )
 		}
 	}
 
+	// Keep the networked photo count in sync so the HUD's 3-slot display
+	// always reflects CPhotoInventory's actual stack, regardless of which
+	// weapon_camera/weapon_placement call last touched it.
+	m_PortalLocal.m_nPhotoStackCount = GetPhotoInventory()->GetStackCount();
+
 	if ( m_Local.m_bSlowMovement && m_Local.m_fTBeamEndTime != 0.0f && gpGlobals->curtime > m_Local.m_fTBeamEndTime + 1.0f )
 	{
 		m_Local.m_bSlowMovement = false;

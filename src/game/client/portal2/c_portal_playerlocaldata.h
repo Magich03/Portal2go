@@ -34,6 +34,7 @@ public:
 
 	bool m_bShowingViewFinder;
 	bool m_bPlacingPhoto;
+	int m_nPhotoStackCount;
 	bool m_bDoneStickInterp;
 	bool m_bDoneCorrectPitch;
 	bool m_bAttemptHullResize;

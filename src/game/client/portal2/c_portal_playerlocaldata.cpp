@@ -11,6 +11,7 @@ RecvPropInt( RECVINFO( m_nLocatorEntityIndices ) ),
 RecvPropInt( RECVINFO( m_nLocatorEntityIndices ) ), // FIXME: Needs to be array!
 
 RecvPropBool( RECVINFO( m_bPlacingPhoto ) ),
+RecvPropInt( RECVINFO( m_nPhotoStackCount ) ),
 
 RecvPropVector( RECVINFO( m_StickNormal ) ),
 RecvPropVector( RECVINFO( m_OldStickNormal ) ),
@@ -94,6 +95,7 @@ C_PortalPlayerLocalData::C_PortalPlayerLocalData()
 
 	m_bShowingViewFinder = false;
 	m_bPlacingPhoto = false;
+	m_nPhotoStackCount = 0;
 	m_bDoneStickInterp = false;
 	m_bDoneCorrectPitch = false;
 	m_bJumpedThisFrame = false;

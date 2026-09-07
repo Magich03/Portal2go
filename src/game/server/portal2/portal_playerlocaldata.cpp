@@ -22,6 +22,7 @@ SendPropInt( SENDINFO( m_nLocatorEntityIndices ) ),
 SendPropInt( SENDINFO( m_nLocatorEntityIndices ) ), // FIXME: Needs to be array!
 
 SendPropBool( SENDINFO( m_bPlacingPhoto ) ),
+SendPropInt( SENDINFO( m_nPhotoStackCount ), 2, SPROP_UNSIGNED ),
 
 SendPropVector( SENDINFO( m_StickNormal ) ),
 SendPropVector( SENDINFO( m_OldStickNormal ) ),
@@ -84,6 +85,7 @@ DEFINE_FIELD( m_nLocatorEntityIndices, FIELD_INTEGER ),
 
 DEFINE_FIELD( m_bShowingViewFinder, FIELD_BOOLEAN ),
 DEFINE_FIELD( m_bPlacingPhoto, FIELD_BOOLEAN ),
+DEFINE_FIELD( m_nPhotoStackCount, FIELD_INTEGER ),
 DEFINE_FIELD( m_bDoneStickInterp, FIELD_BOOLEAN ),
 DEFINE_FIELD( m_bDoneCorrectPitch, FIELD_BOOLEAN ),
 DEFINE_FIELD( m_bAttemptHullResize, FIELD_BOOLEAN ),
@@ -147,6 +149,7 @@ CPortalPlayerLocalData::CPortalPlayerLocalData()
 
 	m_bShowingViewFinder = false;
 	m_bPlacingPhoto = false;
+	m_nPhotoStackCount = 0;
 	m_bDoneStickInterp = false;
 	m_bDoneCorrectPitch = false;
 	m_bJumpedThisFrame = false;

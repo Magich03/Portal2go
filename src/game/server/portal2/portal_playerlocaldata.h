@@ -45,6 +45,7 @@ public:
 
 	CNetworkVar( bool, m_bShowingViewFinder );
 	CNetworkVar( bool, m_bPlacingPhoto );
+	CNetworkVar( int, m_nPhotoStackCount );	// how many photos CPhotoInventory is currently holding (0-3) - see photo_inventory.h
 	CNetworkVar( bool, m_bDoneStickInterp );
 	CNetworkVar( bool, m_bDoneCorrectPitch );
 	CNetworkVar( bool, m_bJumpedThisFrame );

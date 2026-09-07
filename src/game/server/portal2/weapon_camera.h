@@ -33,7 +33,7 @@ public:
 
 private:
 	CBaseAnimating*	FindCapturableEntity( void );
-	void			SendPhotoSnapshot( CPortal_Player *pOwner, char *pszTextureNameOut, int nTextureNameSize );
+	void			SendPhotoSnapshot( CPortal_Player *pOwner, int nSlot );
 };
 
 #endif // WEAPON_CAMERA_H

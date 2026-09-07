@@ -197,6 +197,7 @@ public:
 	bool	IsSlowingTime( void ) { return m_PortalLocal.m_bSlowingTime; }
 #endif // USE_SLOWTIME
 	bool	IsShowingViewFinder( void ) { return m_PortalLocal.m_bShowingViewFinder; }
+	int		GetPhotoStackCount( void ) { return m_PortalLocal.m_nPhotoStackCount; }
 	
 	struct PredictedPortalTeleportation_t 
 	{

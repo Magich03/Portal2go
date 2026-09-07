@@ -2,11 +2,15 @@
 //
 // Purpose: F-Stop camera viewfinder HUD - shown while weapon_camera or
 //			weapon_placement is the active weapon. Draws a simple camera
-//			framing overlay, and a thumbnail of the most recently taken
-//			photograph (rendered into one of the _rt_LargePhoto0/1/2 client
-//			render targets by CViewRender::RenderPhotoSnapshot() - see
+//			framing overlay, and a 3-slot photo inventory row (matching
+//			CPhotoInventory's MAX_HELD_PHOTOS - see photo_inventory.h) bound
+//			to the 3 _rt_LargePhoto0/1/2 client render targets. Each slot is
+//			rendered into by CViewRender::RenderPhotoSnapshot() - see
 //			viewrender.cpp - in response to the server's TakePhoto
-//			usermessage, sent from weapon_camera.cpp's SendPhotoSnapshot()).
+//			usermessage (weapon_camera.cpp's SendPhotoSnapshot()); whether a
+//			slot is currently occupied comes straight from the local
+//			player's networked photo stack count, so it never depends on
+//			messages arriving in order.
 //
 //			Reconstructed from the F-Stop decompile's CHudViewfinder, whose
 //			surviving shell only described DrawCameraFrame()/
@@ -22,6 +26,7 @@
 #include "iclientmode.h"
 #include "c_baseplayer.h"
 #include "c_basecombatweapon.h"
+#include "c_portal_player.h"
 #include "viewrender.h"
 #include <vgui_controls/Controls.h>
 #include <vgui_controls/Panel.h>
@@ -33,7 +38,6 @@
 using namespace vgui;
 
 #define NUM_LARGE_PHOTO_SLOTS 3
-#define PHOTO_THUMBNAIL_FADE_TIME 4.0f
 
 class CHudViewfinder : public CHudElement, public vgui::Panel
 {
@@ -54,11 +58,9 @@ public:
 
 private:
 	void DrawCameraFrame( void );
-	void DrawPhotoThumbnail( void );
+	void DrawPhotoInventoryStatus( void );
 
 	int		m_nPhotoTextureID[ NUM_LARGE_PHOTO_SLOTS ];
-	int		m_nLastPhotoSlot;
-	float	m_flLastPhotoTime;
 };
 
 DECLARE_HUDELEMENT( CHudViewfinder );
@@ -76,9 +78,6 @@ CHudViewfinder::CHudViewfinder( const char *pElementName ) :
 	{
 		m_nPhotoTextureID[ i ] = -1;
 	}
-
-	m_nLastPhotoSlot = -1;
-	m_flLastPhotoTime = -1.0f;
 
 	SetPaintBackgroundEnabled( false );
 }
@@ -135,9 +134,12 @@ bool CHudViewfinder::ShouldDraw( void )
 
 //-----------------------------------------------------------------------------
 // Purpose: The server tells us a photo was just taken and which render
-//			target slot it's going into - queue the actual render (done next
-//			frame, alongside the main view - see CViewRender::
-//			CheckPendingPhotoSnapshot()) and remember it for our thumbnail.
+//			target slot it's going into - queue the actual render, done next
+//			frame alongside the main view (see CViewRender::
+//			CheckPendingPhotoSnapshot()). Whether that slot then shows as
+//			occupied in the HUD comes from the networked stack count in
+//			Paint(), not from this message, so a missed/reordered message
+//			can't leave the HUD out of sync with the server.
 //-----------------------------------------------------------------------------
 bool CHudViewfinder::MsgFunc_TakePhoto( const CUsrMsg_TakePhoto &msg )
 {
@@ -147,16 +149,13 @@ bool CHudViewfinder::MsgFunc_TakePhoto( const CUsrMsg_TakePhoto &msg )
 
 	CViewRender::QueuePhotoSnapshot( nSlot );
 
-	m_nLastPhotoSlot = nSlot;
-	m_flLastPhotoTime = gpGlobals->curtime;
-
 	return true;
 }
 
 void CHudViewfinder::Paint( void )
 {
 	DrawCameraFrame();
-	DrawPhotoThumbnail();
+	DrawPhotoInventoryStatus();
 }
 
 //-----------------------------------------------------------------------------
@@ -193,36 +192,46 @@ void CHudViewfinder::DrawCameraFrame( void )
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: A fading thumbnail of the last photo taken, bottom-right corner -
-//			standing in for the missing HUD/hud_icon_picture art.
+// Purpose: A row of 3 slots, bottom-right corner, one per _rt_LargePhotoN -
+//			standing in for the missing HUD/hud_icon_picture art. A slot is
+//			occupied (shows its rendered thumbnail) if its index is below the
+//			local player's current photo stack count; otherwise it's drawn as
+//			an empty outline. Slot 0 is the oldest held photo (placed last),
+//			matching CPhotoInventory's stack order.
 //-----------------------------------------------------------------------------
-void CHudViewfinder::DrawPhotoThumbnail( void )
+void CHudViewfinder::DrawPhotoInventoryStatus( void )
 {
-	if ( m_nLastPhotoSlot < 0 )
+	C_Portal_Player *pPlayer = ToPortalPlayer( C_BasePlayer::GetLocalPlayer() );
+	if ( !pPlayer )
 		return;
 
-	float flAge = gpGlobals->curtime - m_flLastPhotoTime;
-	if ( flAge < 0.0f || flAge > PHOTO_THUMBNAIL_FADE_TIME )
-		return;
-
-	int alpha = 255;
-	if ( flAge > PHOTO_THUMBNAIL_FADE_TIME - 1.0f )
-	{
-		alpha = (int)( 255.0f * ( PHOTO_THUMBNAIL_FADE_TIME - flAge ) );
-		alpha = clamp( alpha, 0, 255 );
-	}
+	int nStackCount = pPlayer->GetPhotoStackCount();
 
 	int wide, tall;
 	GetSize( wide, tall );
 
-	int nThumbSize = 128;
-	int x0 = wide - nThumbSize - 24;
+	int nThumbSize = 96;
+	int nGap = 12;
+	int nTotalWide = NUM_LARGE_PHOTO_SLOTS * nThumbSize + ( NUM_LARGE_PHOTO_SLOTS - 1 ) * nGap;
+	int x0 = wide - nTotalWide - 24;
 	int y0 = tall - nThumbSize - 24;
 
-	surface()->DrawSetColor( 255, 255, 255, alpha );
-	surface()->DrawSetTexture( m_nPhotoTextureID[ m_nLastPhotoSlot ] );
-	surface()->DrawTexturedRect( x0, y0, x0 + nThumbSize, y0 + nThumbSize );
+	for ( int i = 0; i < NUM_LARGE_PHOTO_SLOTS; ++i )
+	{
+		int x = x0 + i * ( nThumbSize + nGap );
 
-	surface()->DrawSetColor( 255, 255, 255, alpha );
-	surface()->DrawOutlinedRect( x0, y0, x0 + nThumbSize, y0 + nThumbSize );
+		if ( i < nStackCount )
+		{
+			surface()->DrawSetColor( 255, 255, 255, 255 );
+			surface()->DrawSetTexture( m_nPhotoTextureID[ i ] );
+			surface()->DrawTexturedRect( x, y0, x + nThumbSize, y0 + nThumbSize );
+			surface()->DrawSetColor( 255, 255, 255, 255 );
+		}
+		else
+		{
+			surface()->DrawSetColor( 255, 255, 255, 60 );
+		}
+
+		surface()->DrawOutlinedRect( x, y0, x + nThumbSize, y0 + nThumbSize );
+	}
 }
