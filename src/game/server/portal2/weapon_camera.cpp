@@ -102,13 +102,11 @@ void CWeaponCamera::SendPhotoSnapshot( CPortal_Player *pOwner, int nSlot )
 //-----------------------------------------------------------------------------
 // Purpose: Capture whatever we're looking at. prop_swap is a special case -
 //			it swaps places with the player on the spot instead of being
-//			captured at all. Props that override UsesDirectCapture() (like
-//			prop_air_vent) get carried+previewed directly, like before the
-//			polaroid step existed - only one of those can be held at a time.
-//			Everything else becomes a polaroid: the real object is stashed
-//			out of the world and pushed onto a stack of up to 3, each shown
-//			as a flat 2D photo, until weapon_placement's first click on the
-//			most recent one brings it back as a scalable ghost.
+//			captured at all. Everything else (prop_air_vent included)
+//			becomes a polaroid: the real object is stashed out of the world
+//			and pushed onto a stack of up to 3, each shown as a flat 2D
+//			photo, until weapon_placement's first click on the most recent
+//			one brings it back as a scalable ghost.
 //-----------------------------------------------------------------------------
 void CWeaponCamera::PrimaryAttack( void )
 {
@@ -134,36 +132,28 @@ void CWeaponCamera::PrimaryAttack( void )
 		return;
 	}
 
-	bool bCaptured;
+	if ( pInventory->IsStackFull() )
+		return;	// already holding the maximum of 3 photos - place one first
 
-	if ( pTarget->UsesDirectCapture() )
+	// Slot = stack position, so the client's 3 render targets always line up
+	// 1:1 with the HUD's 3 slot positions regardless of capture order.
+	int nSlot = pInventory->GetStackCount();
+	SendPhotoSnapshot( pOwner, nSlot );
+
+	char szTextureName[32];
+	Q_snprintf( szTextureName, sizeof( szTextureName ), "_rt_LargePhoto%d", nSlot );
+
+	CItem_Photograph *pPolaroid = CreatePhotograph( pOwner->EyePosition(), pOwner->EyeAngles(), szTextureName );
+	bool bCaptured = pPolaroid && pInventory->CapturePolaroid( pTarget, pPolaroid );
+
+	if ( !bCaptured )
 	{
-		bCaptured = pInventory->CaptureDirect( pTarget );
-	}
-	else
-	{
-		if ( pInventory->IsStackFull() )
-			return;	// already holding the maximum of 3 photos - place one first
-
-		// Slot = stack position, so the client's 3 render targets always line
-		// up 1:1 with the HUD's 3 slot positions regardless of capture order.
-		int nSlot = pInventory->GetStackCount();
-		SendPhotoSnapshot( pOwner, nSlot );
-
-		char szTextureName[32];
-		Q_snprintf( szTextureName, sizeof( szTextureName ), "_rt_LargePhoto%d", nSlot );
-
-		CItem_Photograph *pPolaroid = CreatePhotograph( pOwner->EyePosition(), pOwner->EyeAngles(), szTextureName );
-		bCaptured = pPolaroid && pInventory->CapturePolaroid( pTarget, pPolaroid );
-
-		if ( !bCaptured && pPolaroid )
+		if ( pPolaroid )
 		{
 			UTIL_Remove( pPolaroid );
 		}
-	}
-
-	if ( !bCaptured )
 		return;
+	}
 
 	pOwner->SetPlacingPhoto( true );
 	EmitSound( "Weapon_Camera.Capture" );

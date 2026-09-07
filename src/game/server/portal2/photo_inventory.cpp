@@ -15,11 +15,11 @@ extern ConVar camera_scale_step;
 extern ConVar camera_max_scale_level;
 
 //-----------------------------------------------------------------------------
-// Purpose: Undoes whichever "hidden" state a stashed/ghosted entity was in
-//			(disabled physics/collision, EF_NODRAW) - safe to call even if
-//			some of those weren't set. Shared by PlacePhoto() and
-//			ReleaseWithoutPlacing(); render mode/scale are handled by the
-//			caller since the two want different final visuals.
+// Purpose: Undoes a stashed/ghosted entity's hidden state (disabled
+//			physics/collision, EF_NODRAW) - safe to call even if some of
+//			those weren't set. Render mode/scale are handled by the caller
+//			since PlacePhoto() and ReleaseWithoutPlacing() want different
+//			final visuals.
 //-----------------------------------------------------------------------------
 static void UnstashEntity( CBaseAnimating *pEntity )
 {
@@ -38,16 +38,6 @@ static void UnstashEntity( CBaseAnimating *pEntity )
 	pEntity->RemoveEffects( EF_NODRAW );
 }
 
-CPhotoInventory::CPhotoInventory()
-	: m_nDirectScaleLevel( 0 )
-{
-}
-
-bool CPhotoInventory::HasPhoto( void ) const
-{
-	return m_hDirectEntity.Get() != NULL || m_Stack.Count() > 0;
-}
-
 bool CPhotoInventory::IsPolaroidPending( void ) const
 {
 	return m_Stack.Count() > 0 && m_Stack.Tail().mode == PHOTOMODE_POLAROID;
@@ -55,47 +45,15 @@ bool CPhotoInventory::IsPolaroidPending( void ) const
 
 bool CPhotoInventory::IsGhostActive( void ) const
 {
-	if ( m_hDirectEntity.Get() != NULL )
-		return true;
-
 	return m_Stack.Count() > 0 && m_Stack.Tail().mode == PHOTOMODE_GHOST;
 }
 
 CBaseAnimating *CPhotoInventory::GetCapturedEntity( void ) const
 {
-	if ( m_hDirectEntity.Get() != NULL )
-		return m_hDirectEntity.Get();
-
 	if ( m_Stack.Count() > 0 )
 		return m_Stack.Tail().hEntity.Get();
 
 	return NULL;
-}
-
-bool CPhotoInventory::CaptureDirect( CBaseAnimating *pEntity )
-{
-	if ( m_hDirectEntity.Get() != NULL || !pEntity )
-		return false;
-
-	m_hDirectEntity = pEntity;
-	m_nDirectScaleLevel = 0;
-
-	IPhysicsObject *pPhys = pEntity->VPhysicsGetObject();
-	if ( pPhys )
-	{
-		pPhys->EnableMotion( false );
-		pPhys->EnableCollisions( false );
-	}
-
-	pEntity->AddSolidFlags( FSOLID_NOT_SOLID );
-	pEntity->SetRenderMode( kRenderTransColor );
-	pEntity->SetRenderColorA( 180 );
-	pEntity->SetObjectScaleLevel( 0 );
-
-	pEntity->m_OnCameraCapture.FireOutput( pEntity, pEntity );
-	pEntity->OnCameraCaptured();
-
-	return true;
 }
 
 bool CPhotoInventory::CapturePolaroid( CBaseAnimating *pEntity, CItem_Photograph *pPolaroid )
@@ -155,27 +113,6 @@ void CPhotoInventory::SpawnGhost( const Vector &vecOrigin, const QAngle &angOrig
 
 void CPhotoInventory::PlacePhoto( const Vector &vecOrigin, const QAngle &angOrigin )
 {
-	if ( m_hDirectEntity.Get() != NULL )
-	{
-		CBaseAnimating *pEntity = m_hDirectEntity.Get();
-
-		pEntity->Teleport( &vecOrigin, &angOrigin, &vec3_origin );
-		UnstashEntity( pEntity );
-		pEntity->SetRenderMode( kRenderNormal );
-		pEntity->SetRenderColorA( 255 );
-		// Model scale (visual only - see weapon_camera.cpp header) is already
-		// applied live by weapon_placement while previewing; just record the
-		// final level.
-		pEntity->SetObjectScaleLevel( m_nDirectScaleLevel );
-
-		pEntity->m_OnCameraRelease.FireOutput( pEntity, pEntity );
-		pEntity->OnCameraPlaced();
-
-		m_hDirectEntity = NULL;
-		m_nDirectScaleLevel = 0;
-		return;
-	}
-
 	if ( m_Stack.Count() == 0 || m_Stack.Tail().mode != PHOTOMODE_GHOST )
 		return;
 
@@ -190,6 +127,9 @@ void CPhotoInventory::PlacePhoto( const Vector &vecOrigin, const QAngle &angOrig
 	UnstashEntity( pEntity );
 	pEntity->SetRenderMode( kRenderNormal );
 	pEntity->SetRenderColorA( 255 );
+	// Model scale (visual only - see weapon_camera.cpp header) is already
+	// applied live by weapon_placement while previewing; just record the
+	// final level.
 	pEntity->SetObjectScaleLevel( stacked.nScaleLevel );
 
 	pEntity->m_OnCameraRelease.FireOutput( pEntity, pEntity );
@@ -198,19 +138,6 @@ void CPhotoInventory::PlacePhoto( const Vector &vecOrigin, const QAngle &angOrig
 
 void CPhotoInventory::ReleaseWithoutPlacing( void )
 {
-	CBaseAnimating *pDirect = m_hDirectEntity.Get();
-	if ( pDirect )
-	{
-		UnstashEntity( pDirect );
-		pDirect->SetRenderMode( kRenderNormal );
-		pDirect->SetRenderColorA( 255 );
-		pDirect->SetModelScale( 1.0f );
-		pDirect->SetObjectScaleLevel( 0 );
-		pDirect->OnCameraPlaced();
-	}
-	m_hDirectEntity = NULL;
-	m_nDirectScaleLevel = 0;
-
 	FOR_EACH_VEC( m_Stack, i )
 	{
 		StackedPhoto_t &stacked = m_Stack[ i ];
@@ -237,9 +164,6 @@ void CPhotoInventory::ReleaseWithoutPlacing( void )
 
 int CPhotoInventory::GetScaleLevel( void ) const
 {
-	if ( m_hDirectEntity.Get() != NULL )
-		return m_nDirectScaleLevel;
-
 	if ( m_Stack.Count() > 0 )
 		return m_Stack.Tail().nScaleLevel;
 
@@ -248,39 +172,25 @@ int CPhotoInventory::GetScaleLevel( void ) const
 
 void CPhotoInventory::ScaleUp( void )
 {
-	int *pLevel = NULL;
+	if ( m_Stack.Count() == 0 )
+		return;
 
-	if ( m_hDirectEntity.Get() != NULL )
+	int &nLevel = m_Stack.Tail().nScaleLevel;
+	if ( nLevel < camera_max_scale_level.GetInt() )
 	{
-		pLevel = &m_nDirectScaleLevel;
-	}
-	else if ( m_Stack.Count() > 0 )
-	{
-		pLevel = &m_Stack.Tail().nScaleLevel;
-	}
-
-	if ( pLevel && *pLevel < camera_max_scale_level.GetInt() )
-	{
-		++( *pLevel );
+		++nLevel;
 	}
 }
 
 void CPhotoInventory::ScaleDown( void )
 {
-	int *pLevel = NULL;
+	if ( m_Stack.Count() == 0 )
+		return;
 
-	if ( m_hDirectEntity.Get() != NULL )
+	int &nLevel = m_Stack.Tail().nScaleLevel;
+	if ( nLevel > -camera_max_scale_level.GetInt() )
 	{
-		pLevel = &m_nDirectScaleLevel;
-	}
-	else if ( m_Stack.Count() > 0 )
-	{
-		pLevel = &m_Stack.Tail().nScaleLevel;
-	}
-
-	if ( pLevel && *pLevel > -camera_max_scale_level.GetInt() )
-	{
-		--( *pLevel );
+		--nLevel;
 	}
 }
 

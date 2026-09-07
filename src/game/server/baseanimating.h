@@ -398,15 +398,6 @@ public:
 	// trigger to match the new scale once placed).
 	virtual void OnCameraCaptured( void ) {}
 	virtual void OnCameraPlaced( void ) {}
-
-	// Most CanBeCaptured props go through weapon_camera's polaroid/ghost
-	// loop: the real object is stashed out of the world entirely while
-	// you're just holding the photo, and only reappears (translucent,
-	// scalable) once you click to place it. A handful of gameplay props
-	// (prop_air_vent) need to keep tracking/reacting the whole time they're
-	// held instead, so they override this to true and get carried+previewed
-	// immediately on capture, like before the polaroid step existed.
-	virtual bool UsesDirectCapture( void ) { return false; }
 protected:
 	int	m_nObjectScaleLevel;
 	bool m_bCanBeCaptured;			// Set true this prop allows capture by weapon_camera

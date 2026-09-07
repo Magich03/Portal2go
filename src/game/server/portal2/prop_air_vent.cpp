@@ -88,7 +88,8 @@ void CPropAirVent::UpdatePushTrigger( void )
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: Don't blow air while we're being carried around as a preview.
+// Purpose: Don't blow air while captured - whether that's sitting in the
+//			photo stack as a polaroid or currently out as a preview ghost.
 //-----------------------------------------------------------------------------
 void CPropAirVent::OnCameraCaptured( void )
 {
