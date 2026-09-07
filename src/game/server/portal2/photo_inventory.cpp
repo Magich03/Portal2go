@@ -138,6 +138,13 @@ void CPhotoInventory::PlacePhoto( const Vector &vecOrigin, const QAngle &angOrig
 
 void CPhotoInventory::ReleaseWithoutPlacing( void )
 {
+	ReturnPhotosToWorld();
+}
+
+int CPhotoInventory::ReturnPhotosToWorld( void )
+{
+	int nRestored = 0;
+
 	FOR_EACH_VEC( m_Stack, i )
 	{
 		StackedPhoto_t &stacked = m_Stack[ i ];
@@ -151,6 +158,7 @@ void CPhotoInventory::ReleaseWithoutPlacing( void )
 			pEntity->SetModelScale( 1.0f );
 			pEntity->SetObjectScaleLevel( 0 );
 			pEntity->OnCameraPlaced();
+			++nRestored;
 		}
 
 		if ( stacked.hPolaroid.Get() )
@@ -160,6 +168,8 @@ void CPhotoInventory::ReleaseWithoutPlacing( void )
 	}
 
 	m_Stack.RemoveAll();
+
+	return nRestored;
 }
 
 int CPhotoInventory::GetScaleLevel( void ) const

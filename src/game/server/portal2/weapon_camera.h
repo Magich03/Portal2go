@@ -25,15 +25,23 @@ class CWeaponCamera : public CBasePortalCombatWeapon
 public:
 	DECLARE_NETWORKCLASS();
 	DECLARE_PREDICTABLE();
+	DECLARE_DATADESC();
 
 	CWeaponCamera();
 
 	virtual void	Precache();
 	virtual void	PrimaryAttack();
 
+	// Mapper-configurable cap on CPhotoInventory::GetStackCount() this
+	// camera will allow (clamped to [0, MAX_HELD_PHOTOS], the hard technical
+	// limit set by the number of _rt_LargePhotoN render targets).
+	void			InputSetNumCaptureSlots( inputdata_t &inputdata );
+
 private:
 	CBaseAnimating*	FindCapturableEntity( void );
 	void			SendPhotoSnapshot( CPortal_Player *pOwner, int nSlot );
+
+	int				m_nMaxCaptureSlots;
 };
 
 #endif // WEAPON_CAMERA_H

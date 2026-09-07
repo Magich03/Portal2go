@@ -79,6 +79,11 @@ public:
 	// normal flow (weapon removed, etc).
 	void			ReleaseWithoutPlacing( void );
 
+	// trigger_photo_eraser: same restore as ReleaseWithoutPlacing(), but
+	// returns how many photos were actually restored so the trigger only
+	// fires its OnObjectsFizzled output when it actually erased something.
+	int				ReturnPhotosToWorld( void );
+
 	// Scale level of the top-of-stack photo - each stacked photo remembers
 	// its own level.
 	int				GetScaleLevel( void ) const;

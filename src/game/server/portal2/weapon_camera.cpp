@@ -36,8 +36,34 @@ LINK_ENTITY_TO_CLASS( weapon_camera, CWeaponCamera );
 
 PRECACHE_WEAPON_REGISTER( weapon_camera );
 
+BEGIN_DATADESC( CWeaponCamera )
+	DEFINE_FIELD( m_nMaxCaptureSlots, FIELD_INTEGER ),
+	DEFINE_INPUTFUNC( FIELD_INTEGER, "SetNumCaptureSlots", InputSetNumCaptureSlots ),
+END_DATADESC()
+
 CWeaponCamera::CWeaponCamera()
+	: m_nMaxCaptureSlots( MAX_HELD_PHOTOS )
 {
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Mapper-facing cap on how many photos this camera will let a
+//			player stack up, clamped to [0, MAX_HELD_PHOTOS] - the hard
+//			technical limit set by the number of _rt_LargePhotoN render
+//			targets (see portal_render_targets.h).
+//-----------------------------------------------------------------------------
+void CWeaponCamera::InputSetNumCaptureSlots( inputdata_t &inputdata )
+{
+	int nSlots = inputdata.value.Int();
+
+	if ( nSlots < 0 || nSlots > MAX_HELD_PHOTOS )
+	{
+		Warning( "weapon_camera %s received 'SetNumCaptureSlots' input with invalid max slot number (must be between 0 and %d, given %i).\n",
+			GetDebugName(), MAX_HELD_PHOTOS, nSlots );
+		return;
+	}
+
+	m_nMaxCaptureSlots = nSlots;
 }
 
 void CWeaponCamera::Precache()
@@ -132,8 +158,8 @@ void CWeaponCamera::PrimaryAttack( void )
 		return;
 	}
 
-	if ( pInventory->IsStackFull() )
-		return;	// already holding the maximum of 3 photos - place one first
+	if ( pInventory->GetStackCount() >= m_nMaxCaptureSlots )
+		return;	// already holding as many photos as this camera currently allows
 
 	// Slot = stack position, so the client's 3 render targets always line up
 	// 1:1 with the HUD's 3 slot positions regardless of capture order.
