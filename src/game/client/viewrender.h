@@ -750,8 +750,26 @@ protected:
 
 	void			DrawMonitors( const CViewSetup &cameraView );
 
-	bool			DrawOneMonitor( ITexture *pRenderTarget, int cameraNum, C_PointCamera *pCameraEnt, const CViewSetup &cameraView, C_BasePlayer *localPlayer, 
+	bool			DrawOneMonitor( ITexture *pRenderTarget, int cameraNum, C_PointCamera *pCameraEnt, const CViewSetup &cameraView, C_BasePlayer *localPlayer,
 						int x, int y, int width, int height );
+
+	// F-Stop photo capture: renders a one-shot snapshot of the local player's
+	// current view into pRenderTarget, reusing the same Push3DView/
+	// ViewDrawScene/PopView pattern as DrawOneMonitor. See
+	// CheckPendingPhotoSnapshot()/QueuePhotoSnapshot() below - the snapshot is
+	// deferred to the next RenderView() call (right alongside DrawMonitors())
+	// rather than rendered immediately from the usermessage handler, so it
+	// always has a valid, up-to-date CViewSetup to copy.
+	bool			RenderPhotoSnapshot( ITexture *pRenderTarget, const CViewSetup &cameraView );
+	void			CheckPendingPhotoSnapshot( const CViewSetup &cameraView );
+
+public:
+	// Called by CHudViewfinder's TakePhoto usermessage handler to request that
+	// the given _rt_LargePhotoN slot be (re)rendered on the next frame.
+	static void		QueuePhotoSnapshot( int nSlot ) { s_nPendingPhotoSlot = nSlot; }
+
+protected:
+	static int		s_nPendingPhotoSlot;
 
 	// Drawing primitives
 	bool			ShouldDrawViewModel( bool drawViewmodel );

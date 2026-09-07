@@ -93,6 +93,33 @@ ITexture* CPortalRenderTargets::GetDepthDoublerTexture()
 }
 
 
+//-----------------------------------------------------------------------------
+// Purpose: One of the 3 F-Stop photo snapshot render targets - see
+//			c_photo_capture.cpp for what renders into these and item_photo.cpp
+//			(CPhotoMaterialProxy) for what reads out of them.
+//-----------------------------------------------------------------------------
+ITexture* CPortalRenderTargets::InitLargePhotoTexture( IMaterialSystem* pMaterialSystem, int nSlot )
+{
+	char szName[32];
+	Q_snprintf( szName, sizeof( szName ), "_rt_LargePhoto%d", nSlot );
+
+	return pMaterialSystem->CreateNamedRenderTargetTextureEx2(
+		szName,
+		256, 256, RT_SIZE_NO_CHANGE,
+		IMAGE_FORMAT_RGBA8888,
+		MATERIAL_RT_DEPTH_SHARED,
+		TEXTUREFLAGS_CLAMPS | TEXTUREFLAGS_CLAMPT,
+		0 );
+}
+
+ITexture* CPortalRenderTargets::GetLargePhotoTexture( int nSlot )
+{
+	if ( nSlot < 0 || nSlot >= NUM_LARGE_PHOTO_SLOTS )
+		return NULL;
+
+	return m_LargePhotoTexture[ nSlot ];
+}
+
 void CPortalRenderTargets::InitPortalWaterTextures( IMaterialSystem* pMaterialSystem )
 {
 // This code does not work on ATI or newer nVidia chips (probably an issue with mismatched depth buffer configuration?) -- disabling it for now
@@ -150,6 +177,11 @@ void CPortalRenderTargets::InitClientRenderTargets( IMaterialSystem* pMaterialSy
 
 	m_DepthDoublerTexture.Init( InitDepthDoublerTexture( pMaterialSystem ) );
 
+	for ( int i = 0; i < NUM_LARGE_PHOTO_SLOTS; ++i )
+	{
+		m_LargePhotoTexture[ i ].Init( InitLargePhotoTexture( pMaterialSystem, i ) );
+	}
+
 	//if ( IsPC() || !IsGameConsole() )
 	{
 		InitPortalWaterTextures( pMaterialSystem );
@@ -165,6 +197,11 @@ void CPortalRenderTargets::ShutdownClientRenderTargets()
 	m_Portal1Texture.Shutdown();
 	m_Portal2Texture.Shutdown();
 	m_DepthDoublerTexture.Shutdown();
+
+	for ( int i = 0; i < NUM_LARGE_PHOTO_SLOTS; ++i )
+	{
+		m_LargePhotoTexture[ i ].Shutdown();
+	}
 
 
 	// Clean up standard HL2 RTs (camera and water)

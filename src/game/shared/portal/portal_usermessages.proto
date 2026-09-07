@@ -385,9 +385,11 @@ message CUsrMsg_ControlHelperAnimate
     optional int32 dummy = 1;
 }
 
-message CUsrMsg_TakePhoto 
+message CUsrMsg_TakePhoto
 {
-    optional int32 dummy = 1;
+    // Which of the _rt_LargePhoto0/1/2 client render targets to render the
+    // snapshot into - see photo_inventory.cpp/c_photo_capture.cpp.
+    optional int32 slot = 1;
 }
 
 message CUsrMsg_Flash 

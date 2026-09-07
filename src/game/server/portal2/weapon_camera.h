@@ -14,6 +14,7 @@
 #include "weapon_portalbasecombatweapon.h"
 
 class CBaseAnimating;
+class CPortal_Player;
 
 //-----------------------------------------------------------------------------
 // Camera / F-Stop capture weapon
@@ -32,6 +33,7 @@ public:
 
 private:
 	CBaseAnimating*	FindCapturableEntity( void );
+	CBaseAnimating*	TakePhotograph( CPortal_Player *pOwner, const Vector &vecEye, const QAngle &angEye );
 };
 
 #endif // WEAPON_CAMERA_H

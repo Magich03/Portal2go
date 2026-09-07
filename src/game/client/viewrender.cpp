@@ -2969,12 +2969,14 @@ void CViewRender::RenderView( const CViewSetup &view, const CViewSetup &hudViewS
 		g_flFreezeFlash[ slot ] = 0.0f;
 
 	#ifdef USE_MONITORS
-		if ( cl_drawmonitors.GetBool() && 
+		if ( cl_drawmonitors.GetBool() &&
 			( ( whatToDraw & RENDERVIEW_SUPPRESSMONITORRENDERING ) == 0 ) )
 		{
-			DrawMonitors( view );	
+			DrawMonitors( view );
 		}
 	#endif
+
+		CheckPendingPhotoSnapshot( view );
 
 		g_bRenderingView = true;
 
@@ -4527,6 +4529,60 @@ bool CViewRender::DrawOneMonitor( ITexture *pRenderTarget, int cameraNum, C_Poin
 		monitorView.zFar = flOldZFar;
 	}
 #endif // USE_MONITORS
+	return true;
+}
+
+int CViewRender::s_nPendingPhotoSlot = -1;
+
+//-----------------------------------------------------------------------------
+// Purpose: If a photo snapshot was queued (by CHudViewfinder's TakePhoto
+//			usermessage handler) since the last frame, render it now into the
+//			requested _rt_LargePhotoN target using this frame's view, then
+//			clear the request.
+//-----------------------------------------------------------------------------
+void CViewRender::CheckPendingPhotoSnapshot( const CViewSetup &cameraView )
+{
+	if ( s_nPendingPhotoSlot < 0 )
+		return;
+
+	ITexture *pRenderTarget = portalrendertargets->GetLargePhotoTexture( s_nPendingPhotoSlot );
+	s_nPendingPhotoSlot = -1;
+
+	if ( !pRenderTarget )
+		return;
+
+	RenderPhotoSnapshot( pRenderTarget, cameraView );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Renders a single still frame of the player's current view into
+//			pRenderTarget - the "take a photograph" render. Mirrors
+//			DrawOneMonitor()'s render pattern, but from the player's own
+//			viewpoint rather than a point_camera's.
+//-----------------------------------------------------------------------------
+bool CViewRender::RenderPhotoSnapshot( ITexture *pRenderTarget, const CViewSetup &cameraView )
+{
+	if ( !pRenderTarget )
+		return false;
+
+	CViewSetup photoView = cameraView;
+	photoView.width = pRenderTarget->GetActualWidth();
+	photoView.height = pRenderTarget->GetActualHeight();
+	photoView.x = 0;
+	photoView.y = 0;
+	photoView.m_bOrtho = false;
+
+	CMatRenderContextPtr pRenderContext( materials );
+
+	FlashlightState_t nullFlashlight;
+	VMatrix matIdentity;
+	matIdentity.Identity();
+	pRenderContext->SetFlashlightState( nullFlashlight, matIdentity );
+
+	render->Push3DView( pRenderContext, photoView, VIEW_CLEAR_DEPTH | VIEW_CLEAR_COLOR, pRenderTarget, GetFrustum() );
+	ViewDrawScene( false, SKYBOX_2DSKYBOX_VISIBLE, photoView, 0, VIEW_MONITOR );
+	render->PopView( pRenderContext, GetFrustum() );
+
 	return true;
 }
 
