@@ -21,7 +21,7 @@ public:
 	virtual void Spawn( void );
 	virtual void Precache( void );
 
-	virtual const char *GetAndroidModelName( void ) { return "models/Zombie/Classic.mdl"; }
+	virtual const char *GetAndroidModelName( void ) { return "models/zombie/new_zombie.mdl"; }
 
 	virtual void HandleAnimEvent( animevent_t *pEvent );
 	virtual int SelectSchedule( void );

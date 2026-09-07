@@ -87,8 +87,8 @@ public:
 	virtual void StartTask( const Task_t *pTask );
 	virtual void RunTask( const Task_t *pTask );
 
-	// Overridden by npc_android_missile for its different placeholder model.
-	virtual const char *GetAndroidModelName( void ) { return "models/npc/bot_female.mdl"; }
+	// Overridden by npc_android_missile for its different model.
+	virtual const char *GetAndroidModelName( void ) { return "models/bot_fem/bot_fem.mdl"; }
 
 	DEFINE_CUSTOM_AI;
 

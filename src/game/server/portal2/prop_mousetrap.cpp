@@ -9,9 +9,7 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-// No F-Stop mousetrap art ships in this repo - like prop_geyser, the
-// original FGD itself marks this model as a placeholder.
-#define MOUSETRAP_MODEL "models/props/metal_box.mdl"
+#define MOUSETRAP_MODEL "models/props_farm/mousetrap.mdl"
 
 // Local box (relative to our forward direction) we search for a victim in.
 static const Vector MOUSETRAP_TRAP_MINS( 0.0f, -16.0f, -4.0f );

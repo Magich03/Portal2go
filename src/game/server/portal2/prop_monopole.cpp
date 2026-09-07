@@ -17,9 +17,7 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-// No F-Stop monopole art ships in this repo - "models/flag/briefcase.mdl" is
-// a real HL2 model (a briefcase, matching the FGD exactly).
-#define MONOPOLE_MODEL "models/flag/briefcase.mdl"
+#define MONOPOLE_MODEL "models/props_farm/magnet.mdl"
 
 ConVar monopole_field_radius( "monopole_field_radius", "256", FCVAR_REPLICATED, "How far a prop_monopole reaches to find objects to attract/repel." );
 ConVar monopole_think_interval( "monopole_think_interval", "0.1", FCVAR_REPLICATED, "How often a prop_monopole re-scans for candidates." );

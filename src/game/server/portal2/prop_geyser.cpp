@@ -16,10 +16,7 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-// No F-Stop geyser art ships in this repo - the original FGD itself marks
-// this model as a placeholder ("REPLACE MY MODEL!!"), so we're in good
-// company reusing the same stand-in HL2 physics prop.
-#define GEYSER_MODEL "models/props/metal_box.mdl"
+#define GEYSER_MODEL "models/props_gameplay/geyser.mdl"
 
 ConVar geyser_idle_time( "geyser_idle_time", "4", FCVAR_REPLICATED, "How long a prop_geyser sits idle between eruptions." );
 ConVar geyser_pre_eruption_time( "geyser_pre_eruption_time", "1", FCVAR_REPLICATED, "How long a prop_geyser telegraphs before erupting." );

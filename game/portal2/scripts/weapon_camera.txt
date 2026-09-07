@@ -1,13 +1,11 @@
 // F-Stop camera
-// NOTE: no unique camera viewmodel/worldmodel content ships in this tree, so this
-// reuses the portal gun models as a placeholder, same as weapon_paintgun.txt does.
 
 WeaponData
 {
 	// Weapon data is loaded by both the Game and Client DLLs.
 	"printname"			"#Camera_WeaponCamera"
-	"viewmodel"			"models/weapons/v_portalgun.mdl"
-	"playermodel"			"models/weapons/w_portalgun.mdl"
+	"viewmodel"			"models/weapons/v_cam.mdl"
+	"playermodel"			"models/weapons/w_cam.mdl"
 	"anim_prefix"			"camera"
 	"bucket"			"0"
 	"bucket_position"		"4"

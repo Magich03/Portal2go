@@ -19,6 +19,7 @@
 #include "tier0/memdbgon.h"
 
 #define CHICKEN_MODEL "models/chicken/chicken.mdl"
+#define CHICKEN_MODEL_BIG "models/chicken/fastchicken.mdl"
 
 //
 // Custom animation events.
@@ -76,6 +77,7 @@ void CNPC_Chicken::Spawn( void )
 void CNPC_Chicken::Precache( void )
 {
 	PrecacheModel( CHICKEN_MODEL );
+	PrecacheModel( CHICKEN_MODEL_BIG );
 
 	PrecacheScriptSound( "NPC_Chicken.Clucks" );
 	PrecacheScriptSound( "NPC_Chicken.Squawk" );
@@ -150,7 +152,8 @@ void CNPC_Chicken::OnCameraCaptured( void )
 
 //-----------------------------------------------------------------------------
 // Purpose: Placed back down - big enough (per IsBig()) and it turns
-//			predator instead of prey.
+//			predator instead of prey (and switches to the fastchicken.mdl
+//			variant to make the change visible at a glance).
 //-----------------------------------------------------------------------------
 void CNPC_Chicken::OnCameraPlaced( void )
 {
@@ -160,12 +163,16 @@ void CNPC_Chicken::OnCameraPlaced( void )
 	{
 		AddClassRelationship( CLASS_COMBINE, D_HT, 0 );
 		CapabilitiesAdd( bits_CAP_INNATE_MELEE_ATTACK1 );
+		SetModel( CHICKEN_MODEL_BIG );
 	}
 	else
 	{
 		AddClassRelationship( CLASS_COMBINE, D_FR, 0 );
 		CapabilitiesRemove( bits_CAP_INNATE_MELEE_ATTACK1 );
+		SetModel( CHICKEN_MODEL );
 	}
+
+	SetHullSizeNormal();
 }
 
 int CNPC_Chicken::MeleeAttack1Conditions( float flDot, float flDist )

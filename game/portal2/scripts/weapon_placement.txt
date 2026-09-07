@@ -1,13 +1,14 @@
 // F-Stop placement
-// NOTE: no unique placement viewmodel/worldmodel content ships in this tree, so this
-// reuses the portal gun models as a placeholder, same as weapon_paintgun.txt does.
+// NOTE: v_photo.mdl is the real F-Stop viewmodel, but no matching w_photo/
+// w_polaroid world model ships in this tree, so the world model reuses
+// w_cam.mdl (also real F-Stop art) as the closest available placeholder.
 
 WeaponData
 {
 	// Weapon data is loaded by both the Game and Client DLLs.
 	"printname"			"#Camera_WeaponPlacement"
-	"viewmodel"			"models/weapons/v_portalgun.mdl"
-	"playermodel"			"models/weapons/w_portalgun.mdl"
+	"viewmodel"			"models/weapons/v_photo.mdl"
+	"playermodel"			"models/weapons/w_cam.mdl"
 	"anim_prefix"			"placement"
 	"bucket"			"0"
 	"bucket_position"		"5"
