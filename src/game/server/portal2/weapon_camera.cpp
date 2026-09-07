@@ -103,9 +103,11 @@ CBaseAnimating *CWeaponCamera::FindCapturableEntity( void )
 	if ( !pAnim->CanBeCaptured() )
 		return NULL;
 
-	if ( !pAnim->VPhysicsGetObject() )
-		return NULL;
-
+	// Note: no VPhysicsGetObject() requirement here - CanBeCaptured() being
+	// explicitly opted into is the only gate now, since AI-driven NPCs
+	// (e.g. npc_chicken) don't have a physics object during normal
+	// locomotion but are still meant to be capturable. CPhotoInventory's
+	// hide/restore calls already guard every VPhysicsGetObject() use.
 	return pAnim;
 }
 

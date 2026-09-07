@@ -4,12 +4,18 @@
 //			decompiled F-Stop/Exposure binaries, whose schedule/task/
 //			condition names and full schedule text (Tasks/Interrupts) match
 //			this repo's own npc_crow.cpp closely enough that the chicken's
-//			AI was almost certainly built the same way - a grounded (no
-//			flying) cousin of it. Wanders/idles, flees when something it
-//			hates gets close, occasionally roosts at a HINT_PORTAL2_NEST
+//			AI was almost certainly built the same way - a grounded cousin
+//			of it. Wanders/idles, occasionally roosts at a HINT_PORTAL2_NEST
 //			hint node (a real, pre-existing but previously unused Portal 2
 //			hint type - see ai_hint.h), and reacts to being off the ground
 //			(falling) vs. just having landed.
+//
+//			Capturable and scale-dependent, per direct user confirmation:
+//			small (the default), it's afraid of npc_android and flees by
+//			hopping/gliding away when threatened; scaled up big enough via
+//			weapon_camera/weapon_placement, it instead hates npc_android and
+//			hunts it down to peck-attack it. See IsBig()/OnCameraCaptured()/
+//			OnCameraPlaced().
 //
 //=============================================================================//
 #ifndef NPC_CHICKEN_H
@@ -29,10 +35,13 @@ enum
 	SCHED_CHICKEN_IDLE_WALK,
 	SCHED_CHICKEN_WALK_AWAY,
 	SCHED_CHICKEN_RUN_AWAY,
+	SCHED_CHICKEN_FLY_AWAY,
 	SCHED_CHICKEN_SQUAWK,
 	SCHED_CHICKEN_FALL,
 	SCHED_CHICKEN_HIT_GROUND,
 	SCHED_CHICKEN_ROOST,
+	SCHED_CHICKEN_CHASE_ENEMY,
+	SCHED_CHICKEN_MELEE_ATTACK1,
 };
 
 //-----------------------------------------------------------------------------
@@ -43,6 +52,7 @@ enum
 	TASK_CHICKEN_PICK_RANDOM_GOAL = LAST_SHARED_TASK,
 	TASK_CHICKEN_PICK_EVADE_GOAL,
 	TASK_CHICKEN_FIND_PATH_TO_NEST,
+	TASK_CHICKEN_FLY_AWAY,
 };
 
 //-----------------------------------------------------------------------------
@@ -71,16 +81,29 @@ public:
 
 	virtual void HandleAnimEvent( animevent_t *pEvent );
 
+	virtual int MeleeAttack1Conditions( float flDot, float flDist );
+	float GetPeckAttackRange( void ) const { return 48.0f; }
+
 	virtual int SelectSchedule( void );
 	virtual void StartTask( const Task_t *pTask );
 	virtual void RunTask( const Task_t *pTask );
+
+	// CBaseAnimating capture hooks (see baseanimating.h) - freezes the
+	// chicken's AI while it's held (polaroid or ghost), and on final
+	// placement decides whether it's now big enough to be aggressive.
+	virtual void OnCameraCaptured( void );
+	virtual void OnCameraPlaced( void );
+
+	bool IsBig( void ) const { return GetModelScale() >= 1.5f; }
 
 	DEFINE_CUSTOM_AI;
 
 private:
 	bool ShouldRoost( void );
+	CBaseEntity *PeckAttack( float flDist, int iDamage );
 
 	bool	m_bWasOffGround;
+	bool	m_bCaptured;
 	float	m_flGroundIdleMoveTime;
 	float	m_flNextRoostAttempt;
 };

@@ -28,8 +28,11 @@ static int AE_CHICKEN_FOOTSTEP_RIGHT;
 static int AE_CHICKEN_FOOTSTEP_LEFT;
 
 ConVar sk_chicken_health( "sk_chicken_health", "5", FCVAR_REPLICATED );
+ConVar sk_chicken_dmg_peck( "sk_chicken_dmg_peck", "15", FCVAR_REPLICATED, "Peck damage dealt by a big (F-Stop scaled up) npc_chicken." );
 ConVar chicken_enemy_too_close_dist( "chicken_enemy_too_close_dist", "300", FCVAR_REPLICATED );
 ConVar chicken_enemy_way_too_close_dist( "chicken_enemy_way_too_close_dist", "150", FCVAR_REPLICATED );
+ConVar chicken_flee_speed( "chicken_flee_speed", "300", FCVAR_REPLICATED, "Horizontal speed of a small npc_chicken's flee hop/glide." );
+ConVar chicken_flee_upward_speed( "chicken_flee_upward_speed", "250", FCVAR_REPLICATED, "Upward speed of a small npc_chicken's flee hop/glide." );
 
 LINK_ENTITY_TO_CLASS( npc_chicken, CNPC_Chicken );
 
@@ -55,7 +58,15 @@ void CNPC_Chicken::Spawn( void )
 	CapabilitiesClear();
 	CapabilitiesAdd( bits_CAP_MOVE_GROUND | bits_CAP_TURN_HEAD );
 
+	// Small (the default) fears npc_android and flees; OnCameraPlaced()
+	// switches this to hate (and adds melee capability) if placed back at
+	// a big enough F-Stop scale.
+	AddClassRelationship( CLASS_COMBINE, D_FR, 0 );
+
+	SetCanBeCaptured( true );
+
 	m_bWasOffGround = false;
+	m_bCaptured = false;
 	m_flGroundIdleMoveTime = gpGlobals->curtime + random->RandomFloat( 0.0f, 5.0f );
 	m_flNextRoostAttempt = gpGlobals->curtime + random->RandomFloat( 20.0f, 40.0f );
 
@@ -125,12 +136,75 @@ bool CNPC_Chicken::ShouldRoost( void )
 	return gpGlobals->curtime > m_flNextRoostAttempt;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: Freeze while held (polaroid or ghost preview) - matches every
+//			other capturable prop, but a thinking NPC also needs its
+//			schedule forced to something inert (see SelectSchedule()) since
+//			just going non-solid/EF_NODRAW doesn't stop it trying to act.
+//-----------------------------------------------------------------------------
+void CNPC_Chicken::OnCameraCaptured( void )
+{
+	m_bCaptured = true;
+	SetEnemy( NULL );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Placed back down - big enough (per IsBig()) and it turns
+//			predator instead of prey.
+//-----------------------------------------------------------------------------
+void CNPC_Chicken::OnCameraPlaced( void )
+{
+	m_bCaptured = false;
+
+	if ( IsBig() )
+	{
+		AddClassRelationship( CLASS_COMBINE, D_HT, 0 );
+		CapabilitiesAdd( bits_CAP_INNATE_MELEE_ATTACK1 );
+	}
+	else
+	{
+		AddClassRelationship( CLASS_COMBINE, D_FR, 0 );
+		CapabilitiesRemove( bits_CAP_INNATE_MELEE_ATTACK1 );
+	}
+}
+
+int CNPC_Chicken::MeleeAttack1Conditions( float flDot, float flDist )
+{
+	if ( !IsBig() )
+		return COND_TOO_FAR_TO_ATTACK;
+
+	if ( flDist > GetPeckAttackRange() )
+		return COND_TOO_FAR_TO_ATTACK;
+
+	if ( flDot < 0.7f )
+		return COND_NOT_FACING_ATTACK;
+
+	return COND_CAN_MELEE_ATTACK1;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: A big chicken's peck - simple hull trace in front of us.
+//-----------------------------------------------------------------------------
+CBaseEntity *CNPC_Chicken::PeckAttack( float flDist, int iDamage )
+{
+	Vector vecMins = GetHullMins();
+	Vector vecMaxs = GetHullMaxs();
+	vecMins.z = vecMins.x;
+	vecMaxs.z = vecMaxs.x;
+
+	return CheckTraceHullAttack( flDist, vecMins, vecMaxs, iDamage, DMG_CLUB );
+}
+
 void CNPC_Chicken::HandleAnimEvent( animevent_t *pEvent )
 {
 	switch ( pEvent->Event() )
 	{
 	case AE_CHICKEN_PECK:
 		EmitSound( "NPC_Chicken.Clucks" );
+		if ( IsBig() )
+		{
+			PeckAttack( GetPeckAttackRange(), sk_chicken_dmg_peck.GetFloat() );
+		}
 		return;
 	case AE_CHICKEN_FOOTSTEP_RIGHT:
 	case AE_CHICKEN_FOOTSTEP_LEFT:
@@ -141,28 +215,42 @@ void CNPC_Chicken::HandleAnimEvent( animevent_t *pEvent )
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: Matches the decompiled priority order exactly: react to falling/
-//			landing first, then fleeing, then occasionally roost, otherwise
-//			idle or wander.
+// Purpose: Matches the decompiled priority order: react to falling/landing
+//			first, then (big) hunt or (small) flee, then occasionally roost,
+//			otherwise idle or wander. Forced inert while captured/ghosted.
 //-----------------------------------------------------------------------------
 int CNPC_Chicken::SelectSchedule( void )
 {
+	if ( m_bCaptured )
+		return SCHED_CHICKEN_IDLE_STAND;
+
 	if ( HasCondition( COND_CHICKEN_OFF_GROUND ) )
 		return SCHED_CHICKEN_FALL;
 
 	if ( HasCondition( COND_CHICKEN_HIT_GROUND ) )
 		return SCHED_CHICKEN_HIT_GROUND;
 
-	if ( HasCondition( COND_CHICKEN_ENEMY_WAY_TOO_CLOSE ) )
+	if ( IsBig() )
 	{
-		ClearCondition( COND_CHICKEN_ENEMY_WAY_TOO_CLOSE );
-		return SCHED_CHICKEN_RUN_AWAY;
-	}
+		if ( HasCondition( COND_CAN_MELEE_ATTACK1 ) )
+			return SCHED_CHICKEN_MELEE_ATTACK1;
 
-	if ( HasCondition( COND_CHICKEN_ENEMY_TOO_CLOSE ) )
+		if ( GetEnemy() )
+			return SCHED_CHICKEN_CHASE_ENEMY;
+	}
+	else
 	{
-		ClearCondition( COND_CHICKEN_ENEMY_TOO_CLOSE );
-		return SCHED_CHICKEN_WALK_AWAY;
+		if ( HasCondition( COND_CHICKEN_ENEMY_WAY_TOO_CLOSE ) )
+		{
+			ClearCondition( COND_CHICKEN_ENEMY_WAY_TOO_CLOSE );
+			return SCHED_CHICKEN_FLY_AWAY;
+		}
+
+		if ( HasCondition( COND_CHICKEN_ENEMY_TOO_CLOSE ) )
+		{
+			ClearCondition( COND_CHICKEN_ENEMY_TOO_CLOSE );
+			return SCHED_CHICKEN_WALK_AWAY;
+		}
 	}
 
 	if ( ShouldRoost() )
@@ -209,6 +297,28 @@ void CNPC_Chicken::StartTask( const Task_t *pTask )
 		{
 			TaskFail( "No enemy" );
 		}
+		break;
+	}
+
+	case TASK_CHICKEN_FLY_AWAY:
+	{
+		if ( GetEnemy() == NULL )
+		{
+			TaskFail( "No enemy" );
+			break;
+		}
+
+		Vector vecAway = GetAbsOrigin() - GetEnemy()->GetAbsOrigin();
+		vecAway.z = 0;
+		VectorNormalize( vecAway );
+
+		Vector vecVelocity = vecAway * chicken_flee_speed.GetFloat();
+		vecVelocity.z = chicken_flee_upward_speed.GetFloat();
+
+		SetGroundEntity( NULL );
+		SetAbsVelocity( vecVelocity );
+
+		TaskComplete();
 		break;
 	}
 
@@ -263,6 +373,7 @@ AI_BEGIN_CUSTOM_NPC( npc_chicken, CNPC_Chicken )
 	DECLARE_TASK( TASK_CHICKEN_PICK_RANDOM_GOAL )
 	DECLARE_TASK( TASK_CHICKEN_PICK_EVADE_GOAL )
 	DECLARE_TASK( TASK_CHICKEN_FIND_PATH_TO_NEST )
+	DECLARE_TASK( TASK_CHICKEN_FLY_AWAY )
 
 	DECLARE_CONDITION( COND_CHICKEN_ENEMY_TOO_CLOSE )
 	DECLARE_CONDITION( COND_CHICKEN_ENEMY_WAY_TOO_CLOSE )
@@ -351,6 +462,53 @@ AI_BEGIN_CUSTOM_NPC( npc_chicken, CNPC_Chicken )
 		""
 		"	Interrupts"
 		"		COND_NEW_ENEMY"
+		"		COND_CHICKEN_OFF_GROUND"
+	)
+
+	//=========================================================
+	DEFINE_SCHEDULE
+	(
+		SCHED_CHICKEN_FLY_AWAY,
+
+		"	Tasks"
+		"		TASK_STOP_MOVING			0"
+		"		TASK_CHICKEN_FLY_AWAY		0"
+		""
+		"	Interrupts"
+		"		COND_CHICKEN_OFF_GROUND"
+	)
+
+	//=========================================================
+	DEFINE_SCHEDULE
+	(
+		SCHED_CHICKEN_CHASE_ENEMY,
+
+		"	Tasks"
+		"		TASK_SET_FAIL_SCHEDULE			SCHEDULE:SCHED_CHASE_ENEMY_FAILED"
+		"		TASK_GET_CHASE_PATH_TO_ENEMY	600"
+		"		TASK_RUN_PATH					0"
+		"		TASK_WAIT_FOR_MOVEMENT			0"
+		"		TASK_FACE_ENEMY					0"
+		""
+		"	Interrupts"
+		"		COND_NEW_ENEMY"
+		"		COND_ENEMY_DEAD"
+		"		COND_CAN_MELEE_ATTACK1"
+		"		COND_CHICKEN_OFF_GROUND"
+	)
+
+	//=========================================================
+	DEFINE_SCHEDULE
+	(
+		SCHED_CHICKEN_MELEE_ATTACK1,
+
+		"	Tasks"
+		"		TASK_STOP_MOVING		0"
+		"		TASK_FACE_ENEMY			0"
+		"		TASK_MELEE_ATTACK1		0"
+		""
+		"	Interrupts"
+		"		COND_ENEMY_DEAD"
 		"		COND_CHICKEN_OFF_GROUND"
 	)
 
