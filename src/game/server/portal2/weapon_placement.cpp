@@ -134,6 +134,7 @@ void CWeaponPlacement::PrimaryAttack( void )
 		return;
 
 	pOwner->GetPhotoInventory()->PlacePhoto( vecOrigin, angOrigin );
+	pOwner->SetPlacingPhoto( false );
 	m_bLastPreviewValid = false;
 
 	EmitSound( "Weapon_Camera.Release" );
@@ -184,6 +185,7 @@ void CWeaponPlacement::UpdateOnRemove( void )
 	if ( pOwner && pOwner->GetPhotoInventory()->HasPhoto() )
 	{
 		pOwner->GetPhotoInventory()->ReleaseWithoutPlacing();
+		pOwner->SetPlacingPhoto( false );
 	}
 
 	BaseClass::UpdateOnRemove();

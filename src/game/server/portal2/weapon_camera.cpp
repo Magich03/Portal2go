@@ -112,6 +112,7 @@ void CWeaponCamera::PrimaryAttack( void )
 	if ( !pOwner->GetPhotoInventory()->CapturePhoto( pTarget ) )
 		return;
 
+	pOwner->SetPlacingPhoto( true );
 	EmitSound( "Weapon_Camera.Capture" );
 
 	CBaseCombatWeapon *pPlacementWeapon = pOwner->Weapon_OwnsThisType( "weapon_placement" );
