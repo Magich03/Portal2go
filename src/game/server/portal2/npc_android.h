@@ -87,8 +87,17 @@ public:
 	virtual void StartTask( const Task_t *pTask );
 	virtual void RunTask( const Task_t *pTask );
 
-	// Overridden by npc_android_missile for its different model.
-	virtual const char *GetAndroidModelName( void ) { return "models/bot_fem/bot_fem.mdl"; }
+	// models/bot_male/bot_male.mdl - confirmed by direct binary analysis of
+	// the real compiled F-Stop assets: bot_male_animations.mdl is the only
+	// bot variant whose sequences carry the exact custom activity names
+	// this AI already uses (ACT_ANDROID_RISE_FROM_GROUND, and the ranged
+	// variant's ACT_ANDROID_RANGED_ATTACK1), plus grab/chop/swat melee
+	// sequences. bot_fem's sequences are all photo-pose flavor
+	// (presentCamera/photoPose/naughty/wave/clap) with no combat content -
+	// not this NPC. Shared by npc_android_missile: bot_male's own
+	// animation set already includes the 'shoot' sequence, so the ranged
+	// subclass doesn't need a different model.
+	virtual const char *GetAndroidModelName( void ) { return "models/bot_male/bot_male.mdl"; }
 
 	DEFINE_CUSTOM_AI;
 

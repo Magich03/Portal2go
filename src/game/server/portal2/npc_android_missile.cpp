@@ -17,6 +17,11 @@
 #include "tier0/memdbgon.h"
 
 //
+// Custom activities (in addition to npc_android's).
+//
+static int ACT_ANDROID_RANGED_ATTACK1;
+
+//
 // Custom animation events (in addition to npc_android's).
 //
 static int AE_ANDROID_STARTSHOOT;
@@ -111,10 +116,17 @@ void CNPC_Android_Missile::FireAndroidMissile( void )
 //=============================================================================
 AI_BEGIN_CUSTOM_NPC( npc_android_missile, CNPC_Android_Missile )
 
+	DECLARE_ACTIVITY( ACT_ANDROID_RANGED_ATTACK1 )
+
 	DECLARE_ANIMEVENT( AE_ANDROID_STARTSHOOT )
 	DECLARE_ANIMEVENT( AE_ANDROID_SHOOT )
 
 	//=========================================================
+	// bot_male's 'shoot' sequence is tagged with the custom activity
+	// ACT_ANDROID_RANGED_ATTACK1 (confirmed by binary analysis), not the
+	// generic ACT_RANGE_ATTACK1 TASK_RANGE_ATTACK1 would look for - play
+	// it directly by name so the AE_ANDROID_SHOOT event embedded in it
+	// still fires FireAndroidMissile() via HandleAnimEvent().
 	DEFINE_SCHEDULE
 	(
 		SCHED_ANDROID_RANGE_ATTACK1,
@@ -123,7 +135,7 @@ AI_BEGIN_CUSTOM_NPC( npc_android_missile, CNPC_Android_Missile )
 		"		TASK_STOP_MOVING		0"
 		"		TASK_FACE_ENEMY			0"
 		"		TASK_ANNOUNCE_ATTACK	1"
-		"		TASK_RANGE_ATTACK1		0"
+		"		TASK_PLAY_SEQUENCE		ACTIVITY:ACT_ANDROID_RANGED_ATTACK1"
 		""
 		"	Interrupts"
 		"		COND_NEW_ENEMY"

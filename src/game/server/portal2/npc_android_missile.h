@@ -21,7 +21,10 @@ public:
 	virtual void Spawn( void );
 	virtual void Precache( void );
 
-	virtual const char *GetAndroidModelName( void ) { return "models/zombie/new_zombie.mdl"; }
+	// Uses CNPC_Android's own bot_male.mdl - its animation set already has
+	// a 'shoot' sequence (tagged ACT_ANDROID_RANGED_ATTACK1) alongside the
+	// melee content, confirmed by binary analysis of the real compiled
+	// F-Stop assets. No separate model needed for the ranged variant.
 
 	virtual void HandleAnimEvent( animevent_t *pEvent );
 	virtual int SelectSchedule( void );

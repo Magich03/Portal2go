@@ -18,8 +18,18 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+// Binary analysis of the real compiled F-Stop assets (chicken/chicken.mdl,
+// chicken/fastchicken.mdl) shows chicken.mdl alone carries every sequence
+// either scale state needs: idle01/walk01/run01 (ACT_IDLE/ACT_WALK/ACT_RUN),
+// peck_attack (ACT_MELEE_ATTACK1), flap/flap_falling/bounce (ACT_JUMP/
+// ACT_GLIDE/ACT_LAND) and roost/roost_idle (ACT_CROUCH/ACT_CROUCHIDLE).
+// fastchicken.mdl only has ref/fastchicken_run/flap/flap_falling/bounce -
+// no ACT_IDLE and no ACT_MELEE_ATTACK1 sequence at all - so swapping to it
+// for the "big" (attacking) state would silently break both its idle and
+// its peck attack. The visual size change already comes from the F-Stop
+// scale system (GetModelScale()/SetObjectScaleLevel()), so no model swap
+// is needed or correct here; chicken.mdl is used for both states.
 #define CHICKEN_MODEL "models/chicken/chicken.mdl"
-#define CHICKEN_MODEL_BIG "models/chicken/fastchicken.mdl"
 
 //
 // Custom animation events.
@@ -77,7 +87,6 @@ void CNPC_Chicken::Spawn( void )
 void CNPC_Chicken::Precache( void )
 {
 	PrecacheModel( CHICKEN_MODEL );
-	PrecacheModel( CHICKEN_MODEL_BIG );
 
 	PrecacheScriptSound( "NPC_Chicken.Clucks" );
 	PrecacheScriptSound( "NPC_Chicken.Squawk" );
@@ -152,8 +161,9 @@ void CNPC_Chicken::OnCameraCaptured( void )
 
 //-----------------------------------------------------------------------------
 // Purpose: Placed back down - big enough (per IsBig()) and it turns
-//			predator instead of prey (and switches to the fastchicken.mdl
-//			variant to make the change visible at a glance).
+//			predator instead of prey. The model stays chicken.mdl in both
+//			cases (see the CHICKEN_MODEL comment) - only the relationship,
+//			melee capability and F-Stop render scale change.
 //-----------------------------------------------------------------------------
 void CNPC_Chicken::OnCameraPlaced( void )
 {
@@ -163,13 +173,11 @@ void CNPC_Chicken::OnCameraPlaced( void )
 	{
 		AddClassRelationship( CLASS_COMBINE, D_HT, 0 );
 		CapabilitiesAdd( bits_CAP_INNATE_MELEE_ATTACK1 );
-		SetModel( CHICKEN_MODEL_BIG );
 	}
 	else
 	{
 		AddClassRelationship( CLASS_COMBINE, D_FR, 0 );
 		CapabilitiesRemove( bits_CAP_INNATE_MELEE_ATTACK1 );
-		SetModel( CHICKEN_MODEL );
 	}
 
 	SetHullSizeNormal();
