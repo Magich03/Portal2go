@@ -9,12 +9,6 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-// No F-Stop photograph art ships in this repo (see weapon_camera.txt/
-// weapon_placement.txt for the same placeholder situation with viewmodels) -
-// reuse a normal HL2 physics prop with known-good vphysics collision so the
-// photograph can be picked up, scaled and placed like any other object.
-#define PHOTOGRAPH_MODEL "models/props_junk/cardboard_box004a.mdl"
-
 IMPLEMENT_SERVERCLASS_ST( CItem_Photograph, DT_Photograph )
 	SendPropString( SENDINFO( m_szTextureName ) ),
 END_SEND_TABLE()
@@ -23,16 +17,13 @@ LINK_ENTITY_TO_CLASS( item_photograph, CItem_Photograph );
 
 void CItem_Photograph::Spawn( void )
 {
-	if ( GetModelName() == NULL_STRING )
-	{
-		PrecacheModel( PHOTOGRAPH_MODEL );
-		SetModel( PHOTOGRAPH_MODEL );
-	}
+	// Bookkeeping only - the player is holding a flat 2D polaroid, not a 3D
+	// object, so this entity is never actually drawn or collided with.
+	SetSolid( SOLID_NONE );
+	SetMoveType( MOVETYPE_NONE );
+	AddEffects( EF_NODRAW );
 
 	BaseClass::Spawn();
-
-	// Photographs are always capturable - that's their entire purpose.
-	SetCanBeCaptured( true );
 }
 
 void CItem_Photograph::SetPhotoTexture( const char *pszTextureName )

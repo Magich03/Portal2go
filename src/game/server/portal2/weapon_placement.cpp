@@ -115,7 +115,13 @@ void CWeaponPlacement::UpdateHeldPreview( void )
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: Commit the held photo at its current preview transform.
+// Purpose: While just holding a polaroid (nothing placed in the world yet),
+//			the first click brings the real captured object out as a
+//			translucent, scalable ghost at the current aim point - it doesn't
+//			commit anything yet, so it doesn't care whether that spot is
+//			currently valid (UpdateHeldPreview() will recolor/track it from
+//			here on, same as a direct capture does from the moment it's
+//			grabbed). Once the ghost is out, a second click commits it.
 //-----------------------------------------------------------------------------
 void CWeaponPlacement::PrimaryAttack( void )
 {
@@ -125,15 +131,28 @@ void CWeaponPlacement::PrimaryAttack( void )
 	if ( !pOwner )
 		return;
 
-	if ( !pOwner->GetPhotoInventory()->HasPhoto() || !m_bLastPreviewValid )
+	CPhotoInventory *pInventory = pOwner->GetPhotoInventory();
+	if ( !pInventory->HasPhoto() )
 		return;
 
 	Vector vecOrigin;
 	QAngle angOrigin;
+
+	if ( pInventory->IsPolaroidPending() )
+	{
+		ComputePlacementTransform( &vecOrigin, &angOrigin );
+		pInventory->SpawnGhost( vecOrigin, angOrigin );
+		m_bLastPreviewValid = false;	// let the next UpdateHeldPreview() tick settle the real color/validity
+		return;
+	}
+
+	if ( !m_bLastPreviewValid )
+		return;
+
 	if ( !ComputePlacementTransform( &vecOrigin, &angOrigin ) )
 		return;
 
-	pOwner->GetPhotoInventory()->PlacePhoto( vecOrigin, angOrigin );
+	pInventory->PlacePhoto( vecOrigin, angOrigin );
 	pOwner->SetPlacingPhoto( false );
 	m_bLastPreviewValid = false;
 
@@ -141,12 +160,13 @@ void CWeaponPlacement::PrimaryAttack( void )
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: Scale the held photo up a step.
+// Purpose: Scale the held photo up a step. Only meaningful once the ghost is
+//			actually out - nothing to scale while still holding a flat polaroid.
 //-----------------------------------------------------------------------------
 void CWeaponPlacement::SecondaryAttack( void )
 {
 	CPortal_Player *pOwner = ToPortalPlayer( GetOwner() );
-	if ( !pOwner || !pOwner->GetPhotoInventory()->HasPhoto() )
+	if ( !pOwner || !pOwner->GetPhotoInventory()->IsGhostActive() )
 		return;
 
 	m_flNextSecondaryAttack = gpGlobals->curtime + 0.2f;
@@ -157,7 +177,8 @@ void CWeaponPlacement::SecondaryAttack( void )
 
 //-----------------------------------------------------------------------------
 // Purpose: Scale the held photo down a step (Reload), and keep the preview
-//			tracking the player's aim every frame.
+//			tracking the player's aim every frame - both only once the ghost
+//			is actually out.
 //-----------------------------------------------------------------------------
 void CWeaponPlacement::ItemPostFrame( void )
 {
@@ -167,7 +188,7 @@ void CWeaponPlacement::ItemPostFrame( void )
 	if ( !pOwner )
 		return;
 
-	if ( !pOwner->GetPhotoInventory()->HasPhoto() )
+	if ( !pOwner->GetPhotoInventory()->IsGhostActive() )
 		return;
 
 	if ( pOwner->m_afButtonPressed & IN_RELOAD )

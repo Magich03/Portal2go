@@ -1,13 +1,15 @@
 //========= Copyright 1996-2009, Valve Corporation, All rights reserved. ============//
 //
-// Purpose: item_photograph - a real photograph object taken by weapon_camera
-//			when there's nothing directly capturable in view. It networks the
-//			name of the client render target (_rt_LargePhoto0/1/2) holding the
-//			snapshot that was rendered at the moment of capture, which the
-//			client's CPhotoMaterialProxy (c_item_photo.cpp) binds as its
-//			$basetexture. Once spawned it plugs into the exact same
-//			CPhotoInventory pickup/scale/placement pipeline as any other
-//			CanBeCaptured prop (see weapon_camera.cpp/photo_inventory.cpp).
+// Purpose: item_photograph - the "polaroid" a player is holding between
+//			weapon_camera's capture and weapon_placement's first click (see
+//			photo_inventory.h's PHOTOMODE_POLAROID). It's never drawn in the
+//			world (EF_NODRAW) - its only job is to network the name of the
+//			client render target (_rt_LargePhoto0/1/2) holding the snapshot
+//			taken at the moment of capture, for the HUD viewfinder's polaroid
+//			thumbnail (and, via CPhotoMaterialProxy in c_item_photo.cpp, for
+//			any future in-world display). It's discarded the moment
+//			CPhotoInventory::SpawnGhost() brings the real captured object
+//			back out - see weapon_camera.cpp/weapon_placement.cpp.
 //
 //=============================================================================//
 #ifndef ITEM_PHOTOGRAPH_H
@@ -16,11 +18,11 @@
 #pragma once
 #endif
 
-#include "props.h"
+#include "baseanimating.h"
 
-class CItem_Photograph : public CPhysicsProp
+class CItem_Photograph : public CBaseAnimating
 {
-	DECLARE_CLASS( CItem_Photograph, CPhysicsProp );
+	DECLARE_CLASS( CItem_Photograph, CBaseAnimating );
 	DECLARE_SERVERCLASS();
 
 public:

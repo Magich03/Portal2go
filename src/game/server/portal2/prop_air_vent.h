@@ -26,7 +26,11 @@ public:
 	virtual void Spawn( void );
 	virtual void Activate( void );
 
-	// CBaseAnimating capture hooks (see baseanimating.h)
+	// CBaseAnimating capture hooks (see baseanimating.h). A vent needs to
+	// keep reacting (disabling its push trigger, then resizing it) the whole
+	// time it's held, so it skips weapon_camera's polaroid/ghost step and
+	// stays carried+previewed directly like before that step existed.
+	virtual bool UsesDirectCapture( void ) { return true; }
 	virtual void OnCameraCaptured( void );
 	virtual void OnCameraPlaced( void );
 

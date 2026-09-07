@@ -6,7 +6,7 @@
 //			photograph (rendered into one of the _rt_LargePhoto0/1/2 client
 //			render targets by CViewRender::RenderPhotoSnapshot() - see
 //			viewrender.cpp - in response to the server's TakePhoto
-//			usermessage, sent from weapon_camera.cpp's TakePhotograph()).
+//			usermessage, sent from weapon_camera.cpp's SendPhotoSnapshot()).
 //
 //			Reconstructed from the F-Stop decompile's CHudViewfinder, whose
 //			surviving shell only described DrawCameraFrame()/
